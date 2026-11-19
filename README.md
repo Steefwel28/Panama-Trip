@@ -22,9 +22,10 @@
 
 Construido desde cero siguiendo los estándares modernos del desarrollo nativo en Android:
 
-* **Lenguaje:** Kotlin
-* **Interfaz de Usuario:** Jetpack Compose + Material Design 3 (Material You)
-* **Arquitectura:** MVVM / Clean Architecture
-* **Distribución:** Android Package (`.apk`)
+- **Lenguaje:** Kotlin (JDK 17)
+- **Interfaz de Usuario:** Jetpack Compose + Material Design 3 (Material You)
+- **Arquitectura:** MVVM / Clean Architecture
+- **Compatibilidad SDK:** `minSdk 26` (Android 8.0) / `compileSdk 37` y `targetSdk 37` (Android 17)
+- **Distribución:** Android Package (`.apk`)
 
 ---
