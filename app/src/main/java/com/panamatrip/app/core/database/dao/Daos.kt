@@ -1,0 +1,142 @@
+package com.panamatrip.app.core.database.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import com.panamatrip.app.core.database.entity.CollectionEntity
+import com.panamatrip.app.core.database.entity.CollectionPostEntity
+import com.panamatrip.app.core.database.entity.CommentEntity
+import com.panamatrip.app.core.database.entity.DestinationEntity
+import com.panamatrip.app.core.database.entity.PostEntity
+import com.panamatrip.app.core.database.entity.PostLikeEntity
+import com.panamatrip.app.core.database.entity.ReviewEntity
+import com.panamatrip.app.core.database.entity.VehicleReportEntity
+import kotlinx.coroutines.flow.Flow
+
+data class CommentCountProjection(
+    val postId: String,
+    val total: Int,
+)
+
+data class CollectionEntryProjection(
+    val collectionId: String,
+    val postId: String,
+)
+
+@Dao
+interface DestinationDao {
+    @Query("SELECT * FROM destinations ORDER BY featuredOrder ASC")
+    fun observeAll(): Flow<List<DestinationEntity>>
+
+    @Query("SELECT * FROM destinations WHERE id = :id")
+    fun observeById(id: String): Flow<DestinationEntity?>
+
+    @Query("SELECT * FROM destinations WHERE id = :id")
+    suspend fun getById(id: String): DestinationEntity?
+
+    @Query("SELECT COUNT(*) FROM destinations")
+    suspend fun count(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<DestinationEntity>)
+}
+
+@Dao
+interface VehicleReportDao {
+    @Query("SELECT * FROM vehicle_reports")
+    fun observeAll(): Flow<List<VehicleReportEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<VehicleReportEntity>)
+
+    @Query("SELECT COUNT(*) FROM vehicle_reports")
+    suspend fun count(): Int
+}
+
+@Dao
+interface PostDao {
+    @Query("SELECT * FROM posts ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<PostEntity>>
+
+    @Query("SELECT * FROM posts WHERE id = :id")
+    suspend fun getById(id: String): PostEntity?
+
+    @Query("SELECT postId FROM post_likes")
+    fun observeLikedPostIds(): Flow<List<String>>
+
+    @Query("SELECT postId, COUNT(*) AS total FROM comments GROUP BY postId")
+    fun observeCommentCounts(): Flow<List<CommentCountProjection>>
+
+    @Query("SELECT * FROM comments WHERE postId = :postId ORDER BY createdAt ASC")
+    fun observeComments(postId: String): Flow<List<CommentEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<PostEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertLike(like: PostLikeEntity)
+
+    @Query("SELECT COUNT(*) FROM post_likes WHERE postId = :postId")
+    suspend fun isLiked(postId: String): Int
+
+    @Query("DELETE FROM post_likes WHERE postId = :postId")
+    suspend fun deleteLike(postId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertComment(comment: CommentEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertComments(items: List<CommentEntity>)
+
+    @Query("SELECT COUNT(*) FROM posts")
+    suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM comments")
+    suspend fun commentCount(): Int
+}
+
+@Dao
+interface CollectionDao {
+    @Query("SELECT * FROM collections ORDER BY sortOrder ASC")
+    fun observeCollections(): Flow<List<CollectionEntity>>
+
+    @Query("SELECT collectionId, postId FROM collection_posts")
+    fun observeEntries(): Flow<List<CollectionEntryProjection>>
+
+    @Query("SELECT postId FROM collection_posts")
+    fun observeSavedPostIds(): Flow<List<String>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCollections(items: List<CollectionEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertEntry(entry: CollectionPostEntity)
+
+    @Query("SELECT COUNT(*) FROM collection_posts WHERE collectionId = :collectionId AND postId = :postId")
+    suspend fun hasEntry(collectionId: String, postId: String): Int
+
+    @Query("DELETE FROM collection_posts WHERE collectionId = :collectionId AND postId = :postId")
+    suspend fun deleteEntry(collectionId: String, postId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEntries(items: List<CollectionPostEntity>)
+
+    @Query("SELECT COUNT(*) FROM collections")
+    suspend fun count(): Int
+}
+
+@Dao
+interface ReviewDao {
+    @Query("SELECT * FROM reviews ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<ReviewEntity>>
+
+    @Query("SELECT * FROM reviews WHERE destinationId = :destinationId ORDER BY createdAt DESC")
+    fun observeForDestination(destinationId: String): Flow<List<ReviewEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<ReviewEntity>)
+
+    @Query("SELECT COUNT(*) FROM reviews")
+    suspend fun count(): Int
+}

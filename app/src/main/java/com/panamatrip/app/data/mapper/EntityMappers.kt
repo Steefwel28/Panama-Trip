@@ -1,0 +1,118 @@
+package com.panamatrip.app.data.mapper
+
+import com.panamatrip.app.core.database.entity.CollectionEntity
+import com.panamatrip.app.core.database.entity.CommentEntity
+import com.panamatrip.app.core.database.entity.DestinationEntity
+import com.panamatrip.app.core.database.entity.PostEntity
+import com.panamatrip.app.core.database.entity.ReviewEntity
+import com.panamatrip.app.core.database.entity.VehicleReportEntity
+import com.panamatrip.app.domain.model.AccessStatus
+import com.panamatrip.app.domain.model.CommunityPost
+import com.panamatrip.app.domain.model.Destination
+import com.panamatrip.app.domain.model.DestinationReview
+import com.panamatrip.app.domain.model.Ecosystem
+import com.panamatrip.app.domain.model.GeoPoint
+import com.panamatrip.app.domain.model.PostComment
+import com.panamatrip.app.domain.model.SavedCollection
+import com.panamatrip.app.domain.model.TerrainStatus
+import com.panamatrip.app.domain.model.VehicleAccessSummary
+import com.panamatrip.app.domain.model.VehicleType
+import com.panamatrip.app.domain.ranking.RatingCalculator
+import com.panamatrip.app.domain.ranking.VehicleTrafficLight
+
+fun VehicleReportEntity.toTrafficLightReport(): VehicleTrafficLight.Report =
+    VehicleTrafficLight.Report(
+        vehicle = enumOrDefault(vehicleType, VehicleType.SUV),
+        verdict = enumOrDefault(verdict, AccessStatus.CAUTION),
+    )
+
+fun DestinationEntity.toDomain(
+    access: Map<VehicleType, VehicleAccessSummary>,
+    reviews: List<DestinationReview>,
+): Destination = Destination(
+    id = id,
+    name = name,
+    province = province,
+    ecosystem = enumOrDefault(ecosystem, Ecosystem.MOUNTAIN),
+    summary = summary,
+    description = description,
+    accessNotes = accessNotes,
+    parking = GeoPoint(parkingLatitude, parkingLongitude),
+    attraction = GeoPoint(attractionLatitude, attractionLongitude),
+    heroImageUrl = heroImageUrl,
+    walkDistanceMeters = walkDistanceMeters,
+    walkMinutes = walkMinutes,
+    elevationGainMeters = elevationGainMeters,
+    recommendedVehicle = enumOrDefault(recommendedVehicle, VehicleType.SUV),
+    vehicleAccess = completeAccessMap(access),
+    averageRating = RatingCalculator.average(reviews),
+    reviewCount = reviews.size,
+    featuredOrder = featuredOrder,
+)
+
+fun ReviewEntity.toDomain(): DestinationReview = DestinationReview(
+    id = id,
+    authorName = authorName,
+    authorRole = authorRole,
+    rating = rating.coerceIn(MIN_RATING, MAX_RATING),
+    body = body,
+    visitLabel = visitLabel,
+)
+
+fun CommentEntity.toDomain(): PostComment = PostComment(
+    id = id,
+    authorName = authorName,
+    body = body,
+    terrainStatus = terrainStatus?.let { runCatching { TerrainStatus.valueOf(it) }.getOrNull() },
+    createdAt = createdAt,
+)
+
+fun PostEntity.toDomain(
+    destination: Destination,
+    likeCount: Int,
+    isLiked: Boolean,
+    commentCount: Int,
+    savedCollectionIds: Set<String>,
+): CommunityPost = CommunityPost(
+    id = id,
+    destination = destination,
+    authorName = authorName,
+    authorRole = authorRole,
+    authorInitials = authorInitials,
+    caption = caption,
+    imageUrl = imageUrl,
+    visitedYear = visitedYear,
+    visitedMonth = visitedMonth,
+    vehicleUsed = enumOrDefault(vehicleUsed, VehicleType.SUV),
+    walkDistanceMeters = walkDistanceMeters,
+    walkMinutes = walkMinutes,
+    activityTag = activityTag,
+    likeCount = (baseLikeCount + if (isLiked) 1 else 0).coerceAtLeast(0),
+    isLiked = isLiked,
+    commentCount = commentCount,
+    savedCollectionIds = savedCollectionIds,
+    createdAt = createdAt,
+)
+
+fun CollectionEntity.toDomain(postIds: List<String>, previewImageUrl: String?): SavedCollection =
+    SavedCollection(
+        id = id,
+        name = name,
+        symbol = symbol,
+        postIds = postIds,
+        previewImageUrl = previewImageUrl,
+        sortOrder = sortOrder,
+    )
+
+/** Completa los tres vehículos para que la UI nunca tenga huecos. */
+private fun completeAccessMap(
+    access: Map<VehicleType, VehicleAccessSummary>,
+): Map<VehicleType, VehicleAccessSummary> = VehicleType.entries.associateWith { vehicle ->
+    access[vehicle] ?: VehicleAccessSummary(vehicle, AccessStatus.CAUTION, reports = 0)
+}
+
+private const val MIN_RATING = 1
+private const val MAX_RATING = 5
+
+private inline fun <reified T : Enum<T>> enumOrDefault(raw: String?, fallback: T): T =
+    raw?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: fallback

@@ -15,3 +15,10 @@ Aplicación nativa Android minimalista (Material Design 3) para exploración de 
 2. Todo estado de pantalla debe modelarse como un `StateFlow<UiState>` inmutable usando `sealed interface`.
 3. Antes de dar por terminada cualquier tarea, ejecuta `./gradlew testDebugUnitTest` y `./gradlew assembleDebug` para verificar compilación y pruebas.
 4. Si encuentras deuda técnica, strings quemados o recomposiciones evitables, refactoriza antes de responder.
+
+## Estándar Visual Android 17 (API 37)
+- Configura `compileSdk = 37` y `targetSdk = 37` en `libs.versions.toml` (AGP 8.9.0+).
+- Activa `enableEdgeToEdge()` en `MainActivity` y gestiona `WindowInsets` para que las imágenes lleguen hasta los bordes físicos del teléfono.
+- Usa Material 3 con Dynamic Color + paleta personalizada (verde selva profundo, piedra volcánica y acentos terracota).
+- Prohibido usar bordes grises (`BorderStroke`) para separar tarjetas: usa elevación tonal con `surfaceContainerLow` y `surfaceContainerHigh`.
+- Implementa transiciones suaves (`AnimatedVisibility` / `SharedTransitionLayout`) y esquinas redondeadas amplias (16.dp a 24.dp).

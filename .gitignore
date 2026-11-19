@@ -2,17 +2,22 @@
 .gradle/
 build/
 .kotlin/
+!gradle/wrapper/gradle-wrapper.jar
 
 # Local configuration file (sdk path, etc)
 local.properties
 
 # Log/OS Files
 *.log
+.DS_Store
+Thumbs.db
 
 # Android Studio generated files and folders
 captures/
 .externalNativeBuild/
 .cxx/
+.navigation/
+lint-results*
 *.aab
 *.apk
 output-metadata.json
@@ -23,13 +28,20 @@ output-metadata.json
 misc.xml
 deploymentTargetDropDown.xml
 render.experimental.xml
+out/
+bin/
 
 # Keystore files
 *.jks
 *.keystore
+keystore.properties
+signing.properties
 
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
 # Android Profiling
 *.hprof
+
+# Compiled class files
+*.class

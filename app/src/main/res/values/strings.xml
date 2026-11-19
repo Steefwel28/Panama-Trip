@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Panama-Trip</string>
+
+    <!-- Navegación -->
+    <string name="nav_explore">Explorar</string>
+    <string name="nav_route">Mi Ruta</string>
+    <string name="nav_saved">Guardados</string>
+
+    <!-- Explorar -->
+    <string name="explore_eyebrow">EXPLORACIÓN NATURAL</string>
+    <string name="explore_guest_mode">Modo invitado</string>
+    <string name="explore_tab_community">Comunidad</string>
+    <string name="explore_tab_directory">Directorio</string>
+    <string name="explore_empty_title">Aún no hay expediciones</string>
+    <string name="explore_empty_body">La base editorial se está preparando. Cambia de pestaña mientras cargamos los destinos verificados.</string>
+    <string name="explore_empty_action">Ver la otra pestaña</string>
+
+    <!-- Feed comunitario -->
+    <string name="feed_empty_title">El feed está en silencio</string>
+    <string name="feed_empty_body">Todavía no hay publicaciones verificadas. Explora el directorio mientras la comunidad comparte su próxima ruta.</string>
+    <string name="action_like">Me gusta</string>
+    <string name="action_comment">Comentar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_plan_route">Planificar ruta</string>
+    <string name="action_open_detail">Ver ficha del destino</string>
+    <string name="action_back">Volver</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_remove_saved">Quitar de guardados</string>
+    <string name="action_waze">Waze</string>
+    <string name="action_google_maps">Google Maps</string>
+    <string name="photo_of">Foto de %1$s</string>
+    <string name="likes_count">%1$d</string>
+    <string name="comments_count">%1$d</string>
+    <string name="metric_vehicle">Carro</string>
+    <string name="metric_walk">Caminata</string>
+    <string name="metric_elevation">Desnivel</string>
+    <string name="guest_author">Invitado</string>
+
+    <!-- Directorio -->
+    <string name="directory_vehicle_question">¿En qué carro vas?</string>
+    <string name="directory_distance_near">A menos de 15 km</string>
+    <string name="directory_distance_mid">A menos de 60 km</string>
+    <string name="directory_distance_origin">Distancias calculadas desde Ciudad de Panamá.</string>
+    <string name="directory_clear_filters">Limpiar filtros</string>
+    <string name="directory_empty_title">Ningún destino con esos filtros</string>
+    <string name="directory_empty_body">Prueba otro vehículo, ecosistema o amplía el radio de distancia.</string>
+    <string name="directory_result_count">%1$d destinos disponibles</string>
+    <string name="destination_meta">%1$s · %2$s</string>
+    <string name="separator_dot" translatable="false">·</string>
+
+    <!-- Detalle -->
+    <string name="detail_semaphore_title">Semáforo vehicular</string>
+    <string name="detail_semaphore_eyebrow">ACCESO REPORTADO</string>
+    <string name="detail_semaphore_subtitle">Resumen de los reportes comunitarios de esta temporada.</string>
+    <string name="detail_arrive_title">Cómo llegar</string>
+    <string name="detail_arrive_eyebrow">DOS COORDENADAS</string>
+    <string name="detail_arrive_subtitle">Llega al estacionamiento en carro y camina hasta el atractivo natural.</string>
+    <string name="detail_parking_title">Estacionamiento</string>
+    <string name="detail_parking_subtitle">Punto exacto para Waze y Google Maps.</string>
+    <string name="detail_attraction_title">Atractivo natural</string>
+    <string name="detail_attraction_subtitle">Inicio del tramo a pie.</string>
+    <string name="detail_attraction_walk">%1$s a pie · %2$d min desde el estacionamiento.</string>
+    <string name="detail_reviews_title">Reseñas verificadas</string>
+    <string name="detail_reviews_eyebrow">BASE EDITORIAL</string>
+    <string name="detail_reviews_empty">Este destino todavía no tiene reseñas publicadas.</string>
+    <string name="detail_review_visit">Visita verificada · %1$s</string>
+    <string name="detail_rating_overlay">%1$s · %2$d reseñas</string>
+    <string name="detail_empty_title">Destino no disponible</string>
+    <string name="detail_empty_body">No encontramos esta ficha en la base local. Vuelve a explorar el directorio.</string>
+    <string name="detail_empty_action">Volver al feed</string>
+
+    <!-- Guardados -->
+    <string name="saved_eyebrow">MODO INVITADO</string>
+    <string name="saved_title">Guardados</string>
+    <string name="saved_collection_count">%1$d publicaciones</string>
+    <string name="saved_collection_title">%1$s %2$s</string>
+    <string name="saved_post_meta">%1$s · %2$s</string>
+    <string name="saved_empty_title">Todavía no guardas nada</string>
+    <string name="saved_empty_body">Toca el marcador en cualquier publicación para armar tu primera colección para el fin de semana.</string>
+    <string name="saved_empty_action">Ir a Explorar</string>
+    <string name="saved_no_posts_title">Colección sin publicaciones</string>
+    <string name="saved_no_posts_body">Elige otra colección o guarda nuevas expediciones desde el feed.</string>
+    <string name="saved_new_collection">Nueva colección</string>
+    <string name="saved_new_collection_body">Agrupa tus expediciones por temporada, cascadas o rutas 4x4.</string>
+    <string name="saved_new_collection_placeholder">Ej. Cascadas de Chiriquí</string>
+    <string name="saved_new_collection_confirm">Crear</string>
+
+    <!-- Selector de colecciones -->
+    <string name="save_sheet_title">Guardar en colección</string>
+    <string name="save_sheet_post_count">%1$d publicaciones guardadas</string>
+    <string name="save_sheet_saved">Ya guardada</string>
+    <string name="save_sheet_new_collection_placeholder">Nueva colección</string>
+    <string name="save_sheet_create">Crear y guardar</string>
+
+    <!-- Comentarios -->
+    <string name="comments_sheet_title">Comentarios</string>
+    <string name="comments_sheet_quick_chips">Estado de la vía</string>
+    <string name="comments_sheet_placeholder">Cuenta cómo está el camino…</string>
+    <string name="comments_sheet_send">Enviar comentario</string>
+    <string name="comments_sheet_empty">Sé el primero en reportar el estado de la vía.</string>
+
+    <!-- Mi Ruta -->
+    <string name="route_eyebrow">LOGÍSTICA · v0.1</string>
+    <string name="route_title">Mi Ruta</string>
+    <string name="route_version_tag">v0.1</string>
+    <string name="route_parking_label">Estacionamiento</string>
+    <string name="route_header_summary">%1$s · %2$s</string>
+    <string name="route_notice_v02">Combustible, peajes y paradas gastronómicas llegan en la v0.2. Por ahora guardamos el estacionamiento exacto y el tramo a pie.</string>
+    <string name="route_logistics_title">Datos de la ruta</string>
+    <string name="route_logistics_eyebrow">RESUMEN</string>
+    <string name="route_origin_label">Desde el origen</string>
+    <string name="route_origin_value">%1$s · %2$s en carro</string>
+    <string name="route_walk_label">Tramo a pie</string>
+    <string name="route_elevation_label">Desnivel</string>
+    <string name="route_attraction_coords_label">Atractivo</string>
+    <string name="route_change_destination">Cambiar destino</string>
+    <string name="route_empty_title">Aún no hay ruta activa</string>
+    <string name="route_empty_body">Elige un destino en Explorar y toca «Planificar ruta» para guardar aquí su estacionamiento.</string>
+    <string name="route_empty_action">Elegir destino</string>
+
+    <!-- Vehículos, ecosistemas y terreno -->
+    <string name="vehicle_sedan">Sedán</string>
+    <string name="vehicle_suv">SUV</string>
+    <string name="vehicle_4x4">4x4</string>
+    <string name="vehicle_reports_count">%1$d reportes</string>
+    <string name="vehicle_reports_empty">Sin reportes</string>
+    <string name="access_clear">Acceso libre</string>
+    <string name="access_caution">Con precaución</string>
+    <string name="access_blocked">No recomendado</string>
+    <string name="ecosystem_mountain">Montaña</string>
+    <string name="ecosystem_cloud_forest">Bosque nuboso</string>
+    <string name="ecosystem_waterfall">Cascada</string>
+    <string name="ecosystem_lagoon">Laguna</string>
+    <string name="ecosystem_pine_forest">Pinar</string>
+    <string name="terrain_road_clear">Vía despejada</string>
+    <string name="terrain_heavy_mud">Mucho lodo</string>
+    <string name="terrain_river_high">Río crecido</string>
+    <string name="terrain_low_branches">Ramas bajas</string>
+
+    <!-- Formato y estados -->
+    <string name="distance_meters">%1$d m</string>
+    <string name="distance_kilometers">%1$.1f km</string>
+    <string name="drive_minutes">%1$d min</string>
+    <string name="walk_summary">%1$s · %2$d min</string>
+    <string name="elevation_meters">+%1$d m</string>
+    <string name="rating_summary">%1$s · %2$d reseñas</string>
+    <string name="rating_empty">Sin reseñas</string>
+    <string name="error_title">No pudimos cargar la base local</string>
+    <string name="error_body">Revisa el almacenamiento del dispositivo e inténtalo de nuevo.</string>
+    <string name="error_retry">Reintentar</string>
+
+    <!-- Avisos -->
+    <string name="notice_like_updated">Tu interés quedó registrado.</string>
+    <string name="notice_comment_published">Comentario publicado.</string>
+    <string name="notice_saved">Guardado en tu colección.</string>
+    <string name="notice_removed">Quitado de la colección.</string>
+    <string name="notice_collection_created">Colección creada.</string>
+    <string name="notice_route_ready">Ruta lista en Mi Ruta.</string>
+    <string name="notice_action_failed">No pudimos completar la acción. Inténtalo otra vez.</string>
+</resources>
