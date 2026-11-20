@@ -4,8 +4,10 @@ import com.panamatrip.app.core.database.dao.CollectionDao
 import com.panamatrip.app.core.database.dao.PostDao
 import com.panamatrip.app.core.database.entity.PostLikeEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
+import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.data.mapper.toDomain
 import com.panamatrip.app.domain.model.CommunityPost
+import com.panamatrip.app.domain.model.NewCommunityPost
 import com.panamatrip.app.domain.model.PostComment
 import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.repository.CommunityRepository
@@ -70,6 +72,33 @@ class CommunityRepositoryImpl(
                 body = trimmed,
                 terrainStatus = terrainStatus?.name,
                 createdAt = clock(),
+            ),
+        )
+    }
+
+    override suspend fun publishPost(post: NewCommunityPost) {
+        val trimmed = post.caption.trim()
+        require(trimmed.isNotEmpty()) { "La publicación necesita una descripción" }
+        require(post.imageUrl.isNotBlank()) { "La publicación necesita una foto" }
+        postDao.insertPost(
+            PostEntity(
+                id = "post-${UUID.randomUUID()}",
+                destinationId = post.destinationId,
+                authorName = post.authorName,
+                authorRole = post.authorRole,
+                authorInitials = post.authorInitials,
+                caption = trimmed,
+                imageUrl = post.imageUrl,
+                visitedYear = post.visitedYear,
+                visitedMonth = post.visitedMonth,
+                vehicleUsed = post.vehicleUsed.name,
+                walkDistanceMeters = post.walkDistanceMeters,
+                walkMinutes = post.walkMinutes,
+                activityTag = null,
+                baseLikeCount = 0,
+                createdAt = clock(),
+                photoVerified = post.photoVerified,
+                exifCapturedAt = post.exifCapturedAtEpochMillis,
             ),
         )
     }

@@ -54,6 +54,7 @@ fun ExploreRoute(
     onOpenDestination: (String) -> Unit,
     onPlanRoute: (String) -> Unit,
     onOpenSaved: () -> Unit,
+    onNewPost: () -> Unit,
 ) {
     val viewModel: ExploreViewModel = viewModel(factory = ExploreViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -77,6 +78,7 @@ fun ExploreRoute(
         onRetry = viewModel::retry,
         onOpenDestination = onOpenDestination,
         onOpenSaved = onOpenSaved,
+        onNewPost = onNewPost,
         onLike = viewModel::toggleLike,
         onOpenComments = viewModel::openComments,
         onCloseComments = viewModel::closeComments,
@@ -104,6 +106,7 @@ fun ExploreScreen(
     onRetry: () -> Unit,
     onOpenDestination: (String) -> Unit,
     onOpenSaved: () -> Unit,
+    onNewPost: () -> Unit,
     onLike: (CommunityPost) -> Unit,
     onOpenComments: (String) -> Unit,
     onCloseComments: () -> Unit,
@@ -116,9 +119,12 @@ fun ExploreScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        val showComposer = (state as? ExploreUiState.Content)?.tab != ExploreTab.DIRECTORY
         ExploreHeader(
             guestMode = (state as? ExploreUiState.Content)?.guestMode ?: true,
+            showComposer = showComposer,
             onOpenSaved = onOpenSaved,
+            onNewPost = onNewPost,
             modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         )
 
@@ -202,7 +208,9 @@ fun ExploreScreen(
 @Composable
 private fun ExploreHeader(
     guestMode: Boolean,
+    showComposer: Boolean,
     onOpenSaved: () -> Unit,
+    onNewPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -229,6 +237,16 @@ private fun ExploreHeader(
                 tone = Tone.Neutral,
                 modifier = Modifier.padding(end = Dimens.tightGap),
             )
+        }
+        if (showComposer) {
+            IconButton(onClick = onNewPost) {
+                Icon(
+                    imageVector = PanamaIcons.Plus,
+                    contentDescription = stringResource(R.string.action_new_post),
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
         IconButton(onClick = onOpenSaved) {
             Icon(

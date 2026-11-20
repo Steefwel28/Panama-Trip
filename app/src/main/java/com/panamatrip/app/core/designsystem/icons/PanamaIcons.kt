@@ -30,6 +30,9 @@ object PanamaIcons {
     val Sun: ImageVector by lazy { build("Sun", SUN) }
     val Fuel: ImageVector by lazy { build("Fuel", FUEL) }
     val Fork: ImageVector by lazy { build("Fork", FORK) }
+    val Play: ImageVector by lazy { build("Play", PLAY) }
+    val Pause: ImageVector by lazy { build("Pause", PAUSE) }
+    val Camera: ImageVector by lazy { build("Camera", CAMERA) }
 
     private fun build(name: String, pathData: String, autoMirror: Boolean = false): ImageVector =
         ImageVector.Builder(
@@ -79,4 +82,8 @@ object PanamaIcons {
         "M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM10 10H6V5h4v5z"
     private const val FORK =
         "M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"
+    private const val PLAY = "M8 5v14l11-7z"
+    private const val PAUSE = "M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+    private const val CAMERA =
+        "M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
 }

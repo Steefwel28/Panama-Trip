@@ -3,6 +3,7 @@ package com.panamatrip.app.core.designsystem.labels
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.panamatrip.app.R
+import com.panamatrip.app.core.format.formatElapsedDuration
 import com.panamatrip.app.domain.logistics.FoodStopKind
 import com.panamatrip.app.domain.logistics.FuelType
 import com.panamatrip.app.domain.logistics.PriceRange
@@ -208,6 +209,29 @@ fun litersLabel(liters: Double): String =
 fun kilometersLabel(kilometers: Double): String =
     stringResource(R.string.kilometers_value, kilometers.toFloat())
 
+/** Cronómetro activo del grabador, sin pausas. */
+fun durationLabel(millis: Long): String = formatElapsedDuration(millis)
+
+@Composable
+fun speedLabel(kilometersPerHour: Double): String =
+    stringResource(R.string.speed_kmh, kilometersPerHour)
+
+fun trackTimestampLabel(epochMillis: Long): String =
+    TimestampFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+
+fun dateLabel(epochMillis: Long): String =
+    DateFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+
+private object TimestampFormatter {
+    private val formatter = DateTimeFormatter.ofPattern("dd MMM · HH:mm", Locale.forLanguageTag("es-PA"))
+    fun format(value: ZonedDateTime): String = formatter.format(value)
+}
+
+private object DateFormatter {
+    private val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.forLanguageTag("es-PA"))
+    fun format(value: ZonedDateTime): String = formatter.format(value)
+}
+
 fun clockLabel(minuteOfDay: Int): String {
     val normalized = ((minuteOfDay % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
     return String.format(
@@ -219,12 +243,7 @@ fun clockLabel(minuteOfDay: Int): String {
 }
 
 fun planTimestampLabel(epochMillis: Long): String =
-    PlanTimestampFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
-
-private object PlanTimestampFormatter {
-    private val formatter = DateTimeFormatter.ofPattern("dd MMM · HH:mm", Locale.forLanguageTag("es-PA"))
-    fun format(value: ZonedDateTime): String = formatter.format(value)
-}
+    TimestampFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
 private const val METERS_PER_KILOMETER = 1000
 private const val CENTS_PER_DOLLAR = 100.0

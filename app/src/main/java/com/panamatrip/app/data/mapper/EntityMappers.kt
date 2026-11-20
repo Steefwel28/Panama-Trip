@@ -6,6 +6,8 @@ import com.panamatrip.app.core.database.entity.DestinationEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.RoutePlanEntity
+import com.panamatrip.app.core.database.entity.TrackEntity
+import com.panamatrip.app.core.database.entity.TrackPointEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
 import com.panamatrip.app.core.database.dao.GuideWithDestinationProjection
 import com.panamatrip.app.domain.logistics.FuelType
@@ -19,8 +21,10 @@ import com.panamatrip.app.domain.model.GeoPoint
 import com.panamatrip.app.domain.model.GuideLanguage
 import com.panamatrip.app.domain.model.LocalGuide
 import com.panamatrip.app.domain.model.PostComment
+import com.panamatrip.app.domain.model.RecordedTrack
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
+import com.panamatrip.app.domain.model.TrackPoint
 import com.panamatrip.app.domain.model.VehicleAccessSummary
 import com.panamatrip.app.domain.model.VehicleType
 import com.panamatrip.app.domain.ranking.RatingCalculator
@@ -98,6 +102,8 @@ fun PostEntity.toDomain(
     commentCount = commentCount,
     savedCollectionIds = savedCollectionIds,
     createdAt = createdAt,
+    photoVerified = photoVerified,
+    exifCapturedAtEpochMillis = exifCapturedAt,
 )
 
 fun CollectionEntity.toDomain(postIds: List<String>, previewImageUrl: String?): SavedCollection =
@@ -165,6 +171,51 @@ fun SavedRoutePlan.toEntity(): RoutePlanEntity = RoutePlanEntity(
     cashOnlyCents = cashOnlyCents,
     totalCents = totalCents,
     createdAt = createdAtEpochMillis,
+)
+
+fun TrackEntity.toDomain(): RecordedTrack = RecordedTrack(
+    id = id,
+    destinationId = destinationId,
+    destinationName = destinationName,
+    startedAtEpochMillis = startedAt,
+    finishedAtEpochMillis = finishedAt,
+    distanceMeters = distanceMeters,
+    activeDurationMillis = activeDurationMillis,
+    averageSpeedKmh = averageSpeedKmh,
+    elevationGainMeters = elevationGainMeters,
+    pointCount = pointCount,
+)
+
+fun RecordedTrack.toEntity(): TrackEntity = TrackEntity(
+    id = id,
+    destinationId = destinationId,
+    destinationName = destinationName,
+    startedAt = startedAtEpochMillis,
+    finishedAt = finishedAtEpochMillis,
+    distanceMeters = distanceMeters,
+    activeDurationMillis = activeDurationMillis,
+    averageSpeedKmh = averageSpeedKmh,
+    elevationGainMeters = elevationGainMeters,
+    pointCount = pointCount,
+)
+
+fun TrackPoint.toEntity(trackId: String, sequence: Int): TrackPointEntity = TrackPointEntity(
+    trackId = trackId,
+    sequence = sequence,
+    latitude = point.latitude,
+    longitude = point.longitude,
+    elevationMeters = elevationMeters,
+    accuracyMeters = accuracyMeters,
+    recordedAt = recordedAtEpochMillis,
+    activeElapsedMillis = activeElapsedMillis,
+)
+
+fun TrackPointEntity.toDomain(): TrackPoint = TrackPoint(
+    point = GeoPoint(latitude, longitude),
+    elevationMeters = elevationMeters,
+    accuracyMeters = accuracyMeters,
+    recordedAtEpochMillis = recordedAt,
+    activeElapsedMillis = activeElapsedMillis,
 )
 
 /** Completa los tres vehículos para que la UI nunca tenga huecos. */

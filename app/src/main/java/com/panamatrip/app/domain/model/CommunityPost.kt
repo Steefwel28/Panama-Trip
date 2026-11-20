@@ -20,6 +20,25 @@ data class CommunityPost(
     val commentCount: Int,
     val savedCollectionIds: Set<String>,
     val createdAt: Long,
+    val photoVerified: Boolean = false,
+    val exifCapturedAtEpochMillis: Long? = null,
+)
+
+/** Datos mínimos para publicar una expedición desde el teléfono. */
+data class NewCommunityPost(
+    val destinationId: String,
+    val authorName: String,
+    val authorRole: String,
+    val authorInitials: String,
+    val caption: String,
+    val imageUrl: String,
+    val visitedYear: Int,
+    val visitedMonth: Int,
+    val vehicleUsed: VehicleType,
+    val walkDistanceMeters: Int,
+    val walkMinutes: Int,
+    val photoVerified: Boolean,
+    val exifCapturedAtEpochMillis: Long?,
 )
 
 /** Comentario con chip rápido de terreno opcional. */

@@ -740,6 +740,43 @@ private fun SavedPlanRow(plan: SavedPlanUi) {
 }
 
 @Composable
+internal fun RecorderEntryCard(onOpenRecorder: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.raisedElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+        ) {
+            Text(
+                text = stringResource(R.string.route_recorder_eyebrow),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+            Text(
+                text = stringResource(R.string.route_recorder_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.route_recorder_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            PrimaryActionButton(
+                text = stringResource(R.string.route_recorder_action),
+                onClick = onOpenRecorder,
+                icon = PanamaIcons.Play,
+            )
+        }
+    }
+}
+
+@Composable
 private fun InfoRow(label: String, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(

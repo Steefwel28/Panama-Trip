@@ -53,6 +53,7 @@ import com.panamatrip.app.domain.model.Destination
 fun RoutePlanRoute(
     container: AppContainer,
     onExplore: () -> Unit,
+    onOpenRecorder: (String?) -> Unit,
 ) {
     val viewModel: RoutePlanViewModel = viewModel(factory = RoutePlanViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -84,6 +85,7 @@ fun RoutePlanRoute(
         onSetSurcharge = viewModel::setSurcharge,
         onSelectDeparture = viewModel::selectDeparture,
         onSavePlan = viewModel::saveCurrentPlan,
+        onOpenRecorder = onOpenRecorder,
     )
 }
 
@@ -99,6 +101,7 @@ fun RoutePlanScreen(
     onSetSurcharge: (Boolean) -> Unit,
     onSelectDeparture: (DepartureWindow) -> Unit,
     onSavePlan: () -> Unit,
+    onOpenRecorder: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -131,6 +134,7 @@ fun RoutePlanScreen(
                     onSetSurcharge = onSetSurcharge,
                     onSelectDeparture = onSelectDeparture,
                     onSavePlan = onSavePlan,
+                    onOpenRecorder = { onOpenRecorder(state.destination.id) },
                 )
             }
         }
@@ -176,6 +180,7 @@ private fun RoutePlanContent(
     onSetSurcharge: (Boolean) -> Unit,
     onSelectDeparture: (DepartureWindow) -> Unit,
     onSavePlan: () -> Unit,
+    onOpenRecorder: () -> Unit,
 ) {
     val destination = content.destination
     LazyColumn(
@@ -231,6 +236,10 @@ private fun RoutePlanContent(
                 text = stringResource(R.string.route_notice_v02),
                 icon = PanamaIcons.Route,
             )
+        }
+
+        item(key = "recorder") {
+            RecorderEntryCard(onOpenRecorder = onOpenRecorder)
         }
 
         item(key = "details_header") {

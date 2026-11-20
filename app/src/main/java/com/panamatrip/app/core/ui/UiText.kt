@@ -12,6 +12,9 @@ fun UiNotice.noticeTextRes(): Int = when (this) {
     UiNotice.COLLECTION_CREATED -> R.string.notice_collection_created
     UiNotice.ROUTE_READY -> R.string.notice_route_ready
     UiNotice.PLAN_SAVED -> R.string.notice_plan_saved
+    UiNotice.TRACK_SAVED -> R.string.notice_track_saved
+    UiNotice.TRACK_DISCARDED -> R.string.notice_track_discarded
+    UiNotice.LOCATION_DENIED -> R.string.notice_location_denied
     UiNotice.ACTION_FAILED -> R.string.notice_action_failed
 }
 

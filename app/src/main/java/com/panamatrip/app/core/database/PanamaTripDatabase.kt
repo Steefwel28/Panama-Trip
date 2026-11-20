@@ -10,6 +10,7 @@ import com.panamatrip.app.core.database.dao.GuideDao
 import com.panamatrip.app.core.database.dao.PostDao
 import com.panamatrip.app.core.database.dao.ReviewDao
 import com.panamatrip.app.core.database.dao.RoutePlanDao
+import com.panamatrip.app.core.database.dao.TrackDao
 import com.panamatrip.app.core.database.dao.VehicleReportDao
 import com.panamatrip.app.core.database.entity.CollectionEntity
 import com.panamatrip.app.core.database.entity.CollectionPostEntity
@@ -20,6 +21,8 @@ import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.PostLikeEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.RoutePlanEntity
+import com.panamatrip.app.core.database.entity.TrackEntity
+import com.panamatrip.app.core.database.entity.TrackPointEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
 
 @Database(
@@ -34,6 +37,8 @@ import com.panamatrip.app.core.database.entity.VehicleReportEntity
         ReviewEntity::class,
         RoutePlanEntity::class,
         GuideEntity::class,
+        TrackEntity::class,
+        TrackPointEntity::class,
     ],
     version = PanamaTripDatabase.VERSION,
     exportSchema = true,
@@ -54,8 +59,10 @@ abstract class PanamaTripDatabase : RoomDatabase() {
 
     abstract fun guideDao(): GuideDao
 
+    abstract fun trackDao(): TrackDao
+
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
         private const val DATABASE_NAME = "panama_trip.db"
 
         fun build(context: Context): PanamaTripDatabase =

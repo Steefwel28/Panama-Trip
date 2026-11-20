@@ -31,6 +31,15 @@ import com.panamatrip.app.features.routeplan.ui.RoutePlanUiState
 import com.panamatrip.app.features.routeplan.ui.SavedPlanUi
 import com.panamatrip.app.features.saved.ui.SavedCollectionUi
 import com.panamatrip.app.features.saved.ui.SavedUiState
+import com.panamatrip.app.features.trackrecorder.ui.ActiveTrackUi
+import com.panamatrip.app.features.trackrecorder.ui.RecordedTrackUi
+import com.panamatrip.app.features.trackrecorder.ui.TrackRecorderUiState
+import com.panamatrip.app.features.postcomposer.ui.PostComposerUiState
+import com.panamatrip.app.features.postcomposer.ui.SelectedPhotoUi
+import com.panamatrip.app.domain.photo.ExifCheck
+import com.panamatrip.app.domain.photo.ExifMetadata
+import com.panamatrip.app.domain.photo.ExifVerification
+import com.panamatrip.app.domain.model.RecorderStatus
 import java.time.Instant
 import java.time.ZoneId
 
@@ -233,5 +242,61 @@ object PreviewFixtures {
     val ecosystems: List<Ecosystem> = Ecosystem.entries
     val accessStatuses: List<AccessStatus> = AccessStatus.entries
 
+    fun recorderState(): TrackRecorderUiState.Content = TrackRecorderUiState.Content(
+        active = ActiveTrackUi(
+            status = RecorderStatus.PAUSED,
+            destinationName = destinations.first().name,
+            startedAtEpochMillis = System.currentTimeMillis() - 42 * MINUTE_MILLIS,
+            distanceMeters = 3_240,
+            activeDurationMillis = 38 * MINUTE_MILLIS,
+            averageSpeedKmh = 5.1,
+            elevationGainMeters = 184,
+            pointCount = 412,
+        ),
+        history = listOf(
+            RecordedTrackUi(
+                id = "preview-track-1",
+                destinationName = destinations.first().name,
+                startedAtEpochMillis = System.currentTimeMillis() - DAY_MILLIS,
+                distanceMeters = 5_180,
+                activeDurationMillis = 74 * MINUTE_MILLIS,
+                averageSpeedKmh = 4.2,
+                elevationGainMeters = 312,
+            ),
+            RecordedTrackUi(
+                id = "preview-track-2",
+                destinationName = destinations.getOrNull(1)?.name,
+                startedAtEpochMillis = System.currentTimeMillis() - 3 * DAY_MILLIS,
+                distanceMeters = 2_400,
+                activeDurationMillis = 31 * MINUTE_MILLIS,
+                averageSpeedKmh = 4.6,
+                elevationGainMeters = 96,
+            ),
+        ),
+    )
+
+    fun composerState(): PostComposerUiState.Content {
+        val destination = destinations.first()
+        return PostComposerUiState.Content(
+            destinations = destinations,
+            selectedDestination = destination,
+            caption = "Subida con neblina y el sendero mojado, pero la vista desde la cima compensa cada paso.",
+            photo = SelectedPhotoUi(
+                fileUri = destination.heroImageUrl,
+                metadata = ExifMetadata(
+                    latitude = destination.attraction.latitude,
+                    longitude = destination.attraction.longitude,
+                    capturedAtEpochMillis = System.currentTimeMillis() - 2 * DAY_MILLIS,
+                ),
+                check = ExifCheck(
+                    verification = ExifVerification.VERIFIED_ON_SITE,
+                    distanceMeters = 420,
+                ),
+            ),
+            isBusy = false,
+        )
+    }
+
+    private const val MINUTE_MILLIS = 60_000L
     private const val DAY_MILLIS = 86_400_000L
 }

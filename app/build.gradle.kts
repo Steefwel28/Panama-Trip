@@ -12,8 +12,8 @@ android {
         applicationId = "com.panamatrip.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.3.0-alpha"
     }
 
     buildTypes {
@@ -69,6 +69,9 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.kotlinx.coroutines.android)
+
+    implementation(libs.play.services.location)
+    implementation(libs.androidx.exifinterface)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

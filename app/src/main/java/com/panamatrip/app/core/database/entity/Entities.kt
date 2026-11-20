@@ -58,6 +58,8 @@ data class PostEntity(
     val activityTag: String?,
     val baseLikeCount: Int,
     val createdAt: Long,
+    val photoVerified: Boolean = false,
+    val exifCapturedAt: Long? = null,
 )
 
 @Entity(tableName = "post_likes")
@@ -150,4 +152,37 @@ data class GuideEntity(
     val rateCents: Int,
     val verified: Boolean,
     val whatsappNumber: String,
+)
+
+@Entity(
+    tableName = "tracks",
+    indices = [Index("destinationId"), Index("startedAt")],
+)
+data class TrackEntity(
+    @PrimaryKey val id: String,
+    val destinationId: String?,
+    val destinationName: String?,
+    val startedAt: Long,
+    val finishedAt: Long,
+    val distanceMeters: Int,
+    val activeDurationMillis: Long,
+    val averageSpeedKmh: Double,
+    val elevationGainMeters: Int,
+    val pointCount: Int,
+)
+
+@Entity(
+    tableName = "track_points",
+    primaryKeys = ["trackId", "sequence"],
+    indices = [Index("trackId")],
+)
+data class TrackPointEntity(
+    val trackId: String,
+    val sequence: Int,
+    val latitude: Double,
+    val longitude: Double,
+    val elevationMeters: Double?,
+    val accuracyMeters: Float?,
+    val recordedAt: Long,
+    val activeElapsedMillis: Long,
 )

@@ -102,9 +102,9 @@
     <string name="comments_sheet_empty">Sé el primero en reportar el estado de la vía.</string>
 
     <!-- Mi Ruta -->
-    <string name="route_eyebrow">LOGÍSTICA · v0.2</string>
+    <string name="route_eyebrow">LOGÍSTICA · v0.3</string>
     <string name="route_title">Mi Ruta</string>
-    <string name="route_version_tag">v0.2</string>
+    <string name="route_version_tag">v0.3</string>
     <string name="route_parking_label">Estacionamiento</string>
     <string name="route_header_summary">%1$s · %2$s</string>
     <string name="route_notice_v02">Cálculos referenciales de combustible, peajes y clima por temporada. Confirma tarifas al pasar la caseta.</string>
@@ -262,4 +262,80 @@
     <string name="notice_route_ready">Ruta lista en Mi Ruta.</string>
     <string name="notice_plan_saved">Plan guardado para consulta offline.</string>
     <string name="notice_action_failed">No pudimos completar la acción. Inténtalo otra vez.</string>
+    <string name="notice_track_saved">Recorrido guardado como trofeo.</string>
+    <string name="notice_track_discarded">Recorrido descartado.</string>
+    <string name="notice_location_denied">Sin permiso de ubicación no podemos grabar la ruta.</string>
+
+    <!-- Grabador de rutas -->
+    <string name="recorder_eyebrow">TROFEO DE EXPEDICIÓN</string>
+    <string name="recorder_title">Grabador de ruta</string>
+    <string name="recorder_status_recording">Grabando</string>
+    <string name="recorder_status_paused">En pausa</string>
+    <string name="recorder_intro_title">Graba tu caminata</string>
+    <string name="recorder_intro_body">El GPS mide distancia, tiempo activo y desnivel positivo aunque pierdas la señal móvil. Pausa cuando te detengas y guarda el recorrido al volver al estacionamiento.</string>
+    <string name="recorder_start">Iniciar recorrido</string>
+    <string name="recorder_pause">Pausar</string>
+    <string name="recorder_resume">Reanudar</string>
+    <string name="recorder_finish">Guardar recorrido</string>
+    <string name="recorder_discard">Descartar</string>
+    <string name="recorder_discard_title">¿Descartar este recorrido?</string>
+    <string name="recorder_discard_body">Los puntos GPS de esta sesión no se guardarán en tu historial de trofeos.</string>
+    <string name="recorder_discard_confirm">Descartar</string>
+    <string name="recorder_permission_needed">Necesitamos acceso a tu ubicación para grabar la caminata. Actívalo y vuelve a intentarlo.</string>
+    <string name="recorder_background_notice">La grabación continúa en segundo plano. Puedes volver a Mi Ruta sin perder el recorrido.</string>
+    <string name="recorder_history_title">Recorridos guardados</string>
+    <string name="recorder_history_eyebrow">TROFEOS</string>
+    <string name="recorder_history_empty_title">Todavía no hay trofeos</string>
+    <string name="recorder_history_empty_body">Inicia una grabación al llegar al estacionamiento y guarda tu primera caminata.</string>
+    <string name="recorder_no_destination">Recorrido sin destino</string>
+    <string name="recorder_started_at">Inicio %1$s · %2$d puntos GPS</string>
+    <string name="recorder_stat_distance">Distancia</string>
+    <string name="recorder_stat_time">Tiempo activo</string>
+    <string name="recorder_stat_speed">Vel. media</string>
+    <string name="recorder_stat_elevation">Desnivel +</string>
+    <string name="recorder_history_meta">%1$s · %2$s</string>
+
+    <!-- Notificación del servicio de rastreo -->
+    <string name="track_notification_channel">Grabación de ruta</string>
+    <string name="track_notification_channel_description">Mantiene el GPS activo mientras se graba un recorrido offline.</string>
+    <string name="track_notification_recording">Grabando tu recorrido</string>
+    <string name="track_notification_paused">Grabación en pausa</string>
+    <string name="track_notification_stats">%1$s · %2$s</string>
+    <string name="track_action_pause">Pausar</string>
+    <string name="track_action_resume">Reanudar</string>
+    <string name="track_action_finish">Guardar</string>
+
+    <!-- Acceso al grabador desde Mi Ruta -->
+    <string name="route_recorder_eyebrow">TROFEO DE EXPEDICIÓN</string>
+    <string name="route_recorder_title">Graba tu caminata</string>
+    <string name="route_recorder_body">Registra en tiempo real la distancia, el tiempo activo y el desnivel positivo entre el estacionamiento y el atractivo.</string>
+    <string name="route_recorder_action">Abrir grabador</string>
+
+    <!-- Compositor de publicaciones -->
+    <string name="composer_eyebrow">COMUNIDAD · v0.3</string>
+    <string name="composer_title">Nueva publicación</string>
+    <string name="composer_intro">Elige una foto original de tu galería. Leemos su GPS y fecha EXIF para verificar la visita sin bloquear las pruebas desde el emulador.</string>
+    <string name="composer_destination_label">Destino visitado</string>
+    <string name="composer_photo_label">Foto de la expedición</string>
+    <string name="composer_photo_hint">Selecciona una imagen original. La comprimimos localmente antes de guardarla.</string>
+    <string name="composer_photo_pick">Elegir foto</string>
+    <string name="composer_photo_change">Cambiar foto</string>
+    <string name="composer_photo_selected">Foto seleccionada para la publicación</string>
+    <string name="composer_caption_label">Cuéntanos de la ruta</string>
+    <string name="composer_caption_placeholder">Qué viste, cómo estaba la vía, qué llevar…</string>
+    <string name="composer_publish">Publicar en la comunidad</string>
+    <string name="composer_publish_hint">La insignia «Foto verificada en sitio» aparece cuando las coordenadas EXIF caen a menos de 5 km del atractivo. Sin metadatos, la publicación sigue disponible sin verificación.</string>
+    <string name="composer_distance_to_destination">A %1$s del atractivo</string>
+    <string name="composer_exif_date">Capturada el %1$s</string>
+    <string name="composer_empty_title">Sin destinos para publicar</string>
+    <string name="composer_empty_body">La base editorial todavía no tiene destinos disponibles. Vuelve a Explorar en unos segundos.</string>
+    <string name="action_new_post">Nueva publicación</string>
+    <string name="post_author_role">Expedición comunitaria</string>
+    <string name="guest_author_initials">IN</string>
+    <string name="post_verified_on_site">Foto verificada en sitio</string>
+    <string name="post_no_gps_verification">Sin verificación GPS</string>
+    <string name="post_outside_radius">Foto fuera del destino</string>
+
+    <!-- Formato de grabación -->
+    <string name="speed_kmh">%1$.1f km/h</string>
 </resources>

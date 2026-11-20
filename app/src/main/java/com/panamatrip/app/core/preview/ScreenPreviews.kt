@@ -14,8 +14,10 @@ import com.panamatrip.app.features.destinationdetail.ui.DestinationDetailScreen
 import com.panamatrip.app.features.explore.ui.ExploreScreen
 import com.panamatrip.app.features.explore.ui.ExploreTab
 import com.panamatrip.app.features.guides.ui.GuidesScreen
+import com.panamatrip.app.features.postcomposer.ui.PostComposerScreen
 import com.panamatrip.app.features.routeplan.ui.RoutePlanScreen
 import com.panamatrip.app.features.saved.ui.SavedScreen
+import com.panamatrip.app.features.trackrecorder.ui.TrackRecorderScreen
 
 @Composable
 private fun PreviewFrame(
@@ -45,6 +47,7 @@ private fun ExplorePreview(tab: ExploreTab) {
         onRetry = {},
         onOpenDestination = {},
         onOpenSaved = {},
+        onNewPost = {},
         onLike = {},
         onOpenComments = {},
         onCloseComments = {},
@@ -168,6 +171,7 @@ private fun RoutePreview() {
         onSetSurcharge = {},
         onSelectDeparture = {},
         onSavePlan = {},
+        onOpenRecorder = {},
     )
 }
 
@@ -216,4 +220,70 @@ private fun GuidesLightPreview() {
 @Composable
 private fun GuidesDarkPreview() {
     PreviewFrame(darkTheme = true) { GuidesPreview() }
+}
+
+@Composable
+private fun RecorderPreview() {
+    TrackRecorderScreen(
+        state = PreviewFixtures.recorderState(),
+        snackbarHostState = remember { SnackbarHostState() },
+        permissionDenied = false,
+        onBack = {},
+        onStart = {},
+        onPause = {},
+        onResume = {},
+        onFinish = {},
+        onDiscard = {},
+        onRetry = {},
+    )
+}
+
+@Preview(name = "Grabador · claro", showBackground = true, widthDp = 412, heightDp = 892)
+@Composable
+private fun RecorderLightPreview() {
+    PreviewFrame(darkTheme = false) { RecorderPreview() }
+}
+
+@Preview(
+    name = "Grabador · oscuro",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+private fun RecorderDarkPreview() {
+    PreviewFrame(darkTheme = true) { RecorderPreview() }
+}
+
+@Composable
+private fun ComposerPreview() {
+    PostComposerScreen(
+        state = PreviewFixtures.composerState(),
+        snackbarHostState = remember { SnackbarHostState() },
+        onBack = {},
+        onRetry = {},
+        onSelectDestination = {},
+        onPickPhoto = {},
+        onCaptionChange = {},
+        onPublish = {},
+    )
+}
+
+@Preview(name = "Compositor · claro", showBackground = true, widthDp = 412, heightDp = 892)
+@Composable
+private fun ComposerLightPreview() {
+    PreviewFrame(darkTheme = false) { ComposerPreview() }
+}
+
+@Preview(
+    name = "Compositor · oscuro",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+private fun ComposerDarkPreview() {
+    PreviewFrame(darkTheme = true) { ComposerPreview() }
 }

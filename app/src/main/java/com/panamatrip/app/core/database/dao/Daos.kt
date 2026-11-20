@@ -13,6 +13,8 @@ import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.PostLikeEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.RoutePlanEntity
+import com.panamatrip.app.core.database.entity.TrackEntity
+import com.panamatrip.app.core.database.entity.TrackPointEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -75,6 +77,9 @@ interface PostDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<PostEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPost(post: PostEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertLike(like: PostLikeEntity)
@@ -173,6 +178,24 @@ data class GuideWithDestinationProjection(
     val destinationName: String,
     val province: String,
 )
+
+@Dao
+interface TrackDao {
+    @Query("SELECT * FROM tracks ORDER BY startedAt DESC")
+    fun observeAll(): Flow<List<TrackEntity>>
+
+    @Query("SELECT * FROM track_points WHERE trackId = :trackId ORDER BY sequence ASC")
+    fun observePoints(trackId: String): Flow<List<TrackPointEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTrack(track: TrackEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPoints(points: List<TrackPointEntity>)
+
+    @Query("SELECT COUNT(*) FROM tracks")
+    suspend fun count(): Int
+}
 
 @Dao
 interface GuideDao {

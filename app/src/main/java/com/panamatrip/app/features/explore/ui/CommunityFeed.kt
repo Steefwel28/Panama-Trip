@@ -140,6 +140,9 @@ private fun CommunityPostCard(
                 verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
             ) {
                 post.activityTag?.let { tag -> OverlayTag(text = tag) }
+                if (post.photoVerified) {
+                    OverlayTag(text = stringResource(R.string.post_verified_on_site))
+                }
                 Text(
                     text = destination.name,
                     style = MaterialTheme.typography.headlineMedium,

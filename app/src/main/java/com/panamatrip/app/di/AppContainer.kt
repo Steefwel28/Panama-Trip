@@ -1,6 +1,7 @@
 package com.panamatrip.app.di
 
 import android.content.Context
+import com.panamatrip.app.R
 import com.panamatrip.app.core.database.DatabaseSeeder
 import com.panamatrip.app.core.database.PanamaTripDatabase
 import com.panamatrip.app.core.datastore.PreferencesStore
@@ -9,14 +10,19 @@ import com.panamatrip.app.data.repository.CollectionRepositoryImpl
 import com.panamatrip.app.data.repository.CommunityRepositoryImpl
 import com.panamatrip.app.data.repository.DestinationRepositoryImpl
 import com.panamatrip.app.data.repository.GuideRepositoryImpl
+import com.panamatrip.app.data.photo.PhotoInspector
 import com.panamatrip.app.data.repository.PreferencesRepositoryImpl
 import com.panamatrip.app.data.repository.RoutePlanRepositoryImpl
+import com.panamatrip.app.data.repository.TrackRepositoryImpl
 import com.panamatrip.app.domain.repository.CollectionRepository
 import com.panamatrip.app.domain.repository.CommunityRepository
 import com.panamatrip.app.domain.repository.DestinationRepository
 import com.panamatrip.app.domain.repository.GuideRepository
 import com.panamatrip.app.domain.repository.PreferencesRepository
 import com.panamatrip.app.domain.repository.RoutePlanRepository
+import com.panamatrip.app.domain.repository.TrackRepository
+import com.panamatrip.app.features.trackrecorder.data.ServiceTrackRecorderController
+import com.panamatrip.app.features.trackrecorder.data.TrackRecorderController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -71,6 +77,22 @@ class AppContainer(context: Context) {
     val guideRepository: GuideRepository by lazy {
         GuideRepositoryImpl(guideDao = database.guideDao())
     }
+
+    val trackRepository: TrackRepository by lazy {
+        TrackRepositoryImpl(trackDao = database.trackDao())
+    }
+
+    val photoInspector: PhotoInspector by lazy { PhotoInspector(appContext) }
+
+    val trackRecorderController: TrackRecorderController by lazy {
+        ServiceTrackRecorderController(appContext)
+    }
+
+    val guestAuthorName: String get() = appContext.getString(R.string.guest_author)
+
+    val guestAuthorRole: String get() = appContext.getString(R.string.post_author_role)
+
+    val guestAuthorInitials: String get() = appContext.getString(R.string.guest_author_initials)
 
     fun warmUp() {
         applicationScope.launch {

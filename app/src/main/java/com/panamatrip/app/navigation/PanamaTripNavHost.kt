@@ -28,8 +28,10 @@ import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.features.destinationdetail.ui.DestinationDetailRoute
 import com.panamatrip.app.features.explore.ui.ExploreRoute
 import com.panamatrip.app.features.guides.ui.GuidesRoute
+import com.panamatrip.app.features.postcomposer.ui.PostComposerRoute
 import com.panamatrip.app.features.routeplan.ui.RoutePlanRoute
 import com.panamatrip.app.features.saved.ui.SavedRoute
+import com.panamatrip.app.features.trackrecorder.ui.TrackRecorderRoute
 
 object Routes {
     const val EXPLORE = "explore"
@@ -38,12 +40,19 @@ object Routes {
     const val ROUTE = "route?destinationId={destinationId}"
     const val ROUTE_BASE = "route"
     const val DESTINATION_DETAIL = "destination/{destinationId}"
+    const val TRACK_RECORDER = "recorder?destinationId={destinationId}"
+    const val TRACK_RECORDER_BASE = "recorder"
+    const val POST_COMPOSER = "composer"
 
     const val ARG_DESTINATION_ID = "destinationId"
 
     fun destination(destinationId: String): String = "destination/$destinationId"
 
     fun route(destinationId: String): String = "$ROUTE_BASE?$ARG_DESTINATION_ID=$destinationId"
+
+    fun trackRecorder(destinationId: String? = null): String = destinationId
+        ?.let { "$TRACK_RECORDER_BASE?$ARG_DESTINATION_ID=$it" }
+        ?: TRACK_RECORDER_BASE
 }
 
 private data class BottomTab(
@@ -100,6 +109,7 @@ fun PanamaTripApp(container: AppContainer) {
                     onOpenDestination = { id -> navController.navigate(Routes.destination(id)) },
                     onPlanRoute = { id -> navController.navigate(Routes.route(id)) },
                     onOpenSaved = { navController.navigateToTab(Routes.SAVED) },
+                    onNewPost = { navController.navigate(Routes.POST_COMPOSER) },
                 )
             }
             composable(
@@ -127,6 +137,9 @@ fun PanamaTripApp(container: AppContainer) {
                 RoutePlanRoute(
                     container = container,
                     onExplore = { navController.navigateToTab(Routes.EXPLORE) },
+                    onOpenRecorder = { destinationId ->
+                        navController.navigate(Routes.trackRecorder(destinationId))
+                    },
                 )
             }
             composable(Routes.SAVED) {
@@ -138,6 +151,28 @@ fun PanamaTripApp(container: AppContainer) {
             }
             composable(Routes.GUIDES) {
                 GuidesRoute(container = container)
+            }
+            composable(
+                route = Routes.TRACK_RECORDER,
+                arguments = listOf(
+                    navArgument(Routes.ARG_DESTINATION_ID) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) {
+                TrackRecorderRoute(
+                    container = container,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.POST_COMPOSER) {
+                PostComposerRoute(
+                    container = container,
+                    onBack = { navController.popBackStack() },
+                    onPublished = { navController.popBackStack() },
+                )
             }
         }
     }

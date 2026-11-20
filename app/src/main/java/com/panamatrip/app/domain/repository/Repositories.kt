@@ -8,6 +8,9 @@ import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.model.VehicleType
 import com.panamatrip.app.domain.model.LocalGuide
+import com.panamatrip.app.domain.model.NewCommunityPost
+import com.panamatrip.app.domain.model.RecordedTrack
+import com.panamatrip.app.domain.model.TrackPoint
 import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.affinity.AffinitySnapshot
 import com.panamatrip.app.core.datastore.UserPreferences
@@ -29,6 +32,8 @@ interface CommunityRepository {
         terrainStatus: TerrainStatus?,
         authorName: String,
     )
+
+    suspend fun publishPost(post: NewCommunityPost)
 }
 
 interface CollectionRepository {
@@ -55,4 +60,10 @@ interface GuideRepository {
 interface RoutePlanRepository {
     fun observeSavedPlans(destinationId: String, limit: Int): Flow<List<SavedRoutePlan>>
     suspend fun save(plan: SavedRoutePlan)
+}
+
+interface TrackRepository {
+    fun observeTracks(): Flow<List<RecordedTrack>>
+    fun observeTrackPoints(trackId: String): Flow<List<TrackPoint>>
+    suspend fun save(track: RecordedTrack)
 }
