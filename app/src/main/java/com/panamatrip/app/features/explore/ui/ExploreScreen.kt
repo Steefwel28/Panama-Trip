@@ -25,7 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,11 +58,11 @@ fun ExploreRoute(
     val viewModel: ExploreViewModel = viewModel(factory = ExploreViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
         viewModel.notices.collect { notice ->
-            snackbarHostState.showSnackbar(context.getString(notice.noticeTextRes()))
+            snackbarHostState.showSnackbar(resources.getString(notice.noticeTextRes()))
         }
     }
 

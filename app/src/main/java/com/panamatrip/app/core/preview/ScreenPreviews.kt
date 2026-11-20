@@ -13,6 +13,7 @@ import com.panamatrip.app.core.designsystem.theme.PanamaTripTheme
 import com.panamatrip.app.features.destinationdetail.ui.DestinationDetailScreen
 import com.panamatrip.app.features.explore.ui.ExploreScreen
 import com.panamatrip.app.features.explore.ui.ExploreTab
+import com.panamatrip.app.features.guides.ui.GuidesScreen
 import com.panamatrip.app.features.routeplan.ui.RoutePlanScreen
 import com.panamatrip.app.features.saved.ui.SavedScreen
 
@@ -158,10 +159,15 @@ private fun SavedDarkPreview() {
 private fun RoutePreview() {
     RoutePlanScreen(
         state = PreviewFixtures.routeState(),
+        snackbarHostState = remember { SnackbarHostState() },
         onRetry = {},
         onExplore = {},
         onWaze = {},
         onGoogleMaps = {},
+        onSelectFuel = {},
+        onSetSurcharge = {},
+        onSelectDeparture = {},
+        onSavePlan = {},
     )
 }
 
@@ -181,4 +187,33 @@ private fun RouteLightPreview() {
 @Composable
 private fun RouteDarkPreview() {
     PreviewFrame(darkTheme = true) { RoutePreview() }
+}
+
+@Composable
+private fun GuidesPreview() {
+    GuidesScreen(
+        state = PreviewFixtures.guidesState(),
+        snackbarHostState = remember { SnackbarHostState() },
+        onSelectDestination = {},
+        onRetry = {},
+        onWhatsApp = {},
+    )
+}
+
+@Preview(name = "Guías · claro", showBackground = true, widthDp = 412, heightDp = 892)
+@Composable
+private fun GuidesLightPreview() {
+    PreviewFrame(darkTheme = false) { GuidesPreview() }
+}
+
+@Preview(
+    name = "Guías · oscuro",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+private fun GuidesDarkPreview() {
+    PreviewFrame(darkTheme = true) { GuidesPreview() }
 }

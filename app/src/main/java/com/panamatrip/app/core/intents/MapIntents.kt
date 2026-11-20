@@ -38,15 +38,16 @@ object MapIntents {
 }
 
 /** Abre el primer intent disponible y cae al navegador si no hay app instalada. */
-fun Context.launchFirstAvailable(intents: List<Intent>) {
+fun Context.launchFirstAvailable(intents: List<Intent>): Boolean {
     intents.forEach { intent ->
         try {
             startActivity(intent)
-            return
+            return true
         } catch (notInstalled: ActivityNotFoundException) {
             // Se intenta el siguiente candidato (fallback web).
         } catch (blocked: SecurityException) {
             // Política del dispositivo: se intenta el siguiente candidato.
         }
     }
+    return false
 }

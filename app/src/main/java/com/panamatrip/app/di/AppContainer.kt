@@ -8,11 +8,15 @@ import com.panamatrip.app.core.datastore.panamaTripPreferences
 import com.panamatrip.app.data.repository.CollectionRepositoryImpl
 import com.panamatrip.app.data.repository.CommunityRepositoryImpl
 import com.panamatrip.app.data.repository.DestinationRepositoryImpl
+import com.panamatrip.app.data.repository.GuideRepositoryImpl
 import com.panamatrip.app.data.repository.PreferencesRepositoryImpl
+import com.panamatrip.app.data.repository.RoutePlanRepositoryImpl
 import com.panamatrip.app.domain.repository.CollectionRepository
 import com.panamatrip.app.domain.repository.CommunityRepository
 import com.panamatrip.app.domain.repository.DestinationRepository
+import com.panamatrip.app.domain.repository.GuideRepository
 import com.panamatrip.app.domain.repository.PreferencesRepository
+import com.panamatrip.app.domain.repository.RoutePlanRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -58,6 +62,14 @@ class AppContainer(context: Context) {
 
     val preferencesRepository: PreferencesRepository by lazy {
         PreferencesRepositoryImpl(preferencesStore)
+    }
+
+    val routePlanRepository: RoutePlanRepository by lazy {
+        RoutePlanRepositoryImpl(routePlanDao = database.routePlanDao())
+    }
+
+    val guideRepository: GuideRepository by lazy {
+        GuideRepositoryImpl(guideDao = database.guideDao())
     }
 
     fun warmUp() {

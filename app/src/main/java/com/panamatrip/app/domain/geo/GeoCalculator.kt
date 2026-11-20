@@ -51,6 +51,14 @@ object GeoCalculator {
         return (roadMeters / AVERAGE_DRIVE_SPEED_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
     }
 
+    /**
+     * Distancia vial aproximada: aplica el mismo factor de sinuosidad que usa
+     * la estimación de tiempo, para que el consumo de combustible se calcule
+     * sobre kilómetros de carretera y no sobre la línea recta.
+     */
+    fun roadDistanceMeters(distanceMeters: Int): Int =
+        (distanceMeters.coerceAtLeast(0) * ROAD_SINUOSITY).toInt()
+
     private const val ROAD_SINUOSITY = 1.35
     private const val AVERAGE_DRIVE_SPEED_METERS_PER_MINUTE = 650.0
 

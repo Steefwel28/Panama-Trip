@@ -6,6 +6,7 @@
     <string name="nav_explore">Explorar</string>
     <string name="nav_route">Mi Ruta</string>
     <string name="nav_saved">Guardados</string>
+    <string name="nav_guides">Guías</string>
 
     <!-- Explorar -->
     <string name="explore_eyebrow">EXPLORACIÓN NATURAL</string>
@@ -101,12 +102,12 @@
     <string name="comments_sheet_empty">Sé el primero en reportar el estado de la vía.</string>
 
     <!-- Mi Ruta -->
-    <string name="route_eyebrow">LOGÍSTICA · v0.1</string>
+    <string name="route_eyebrow">LOGÍSTICA · v0.2</string>
     <string name="route_title">Mi Ruta</string>
-    <string name="route_version_tag">v0.1</string>
+    <string name="route_version_tag">v0.2</string>
     <string name="route_parking_label">Estacionamiento</string>
     <string name="route_header_summary">%1$s · %2$s</string>
-    <string name="route_notice_v02">Combustible, peajes y paradas gastronómicas llegan en la v0.2. Por ahora guardamos el estacionamiento exacto y el tramo a pie.</string>
+    <string name="route_notice_v02">Cálculos referenciales de combustible, peajes y clima por temporada. Confirma tarifas al pasar la caseta.</string>
     <string name="route_logistics_title">Datos de la ruta</string>
     <string name="route_logistics_eyebrow">RESUMEN</string>
     <string name="route_origin_label">Desde el origen</string>
@@ -116,8 +117,110 @@
     <string name="route_attraction_coords_label">Atractivo</string>
     <string name="route_change_destination">Cambiar destino</string>
     <string name="route_empty_title">Aún no hay ruta activa</string>
-    <string name="route_empty_body">Elige un destino en Explorar y toca «Planificar ruta» para guardar aquí su estacionamiento.</string>
+    <string name="route_empty_body">Elige un destino en Explorar y toca «Planificar ruta» para calcular combustible, peajes y paradas aquí.</string>
     <string name="route_empty_action">Elegir destino</string>
+
+    <!-- Motor logístico -->
+    <string name="route_engine_eyebrow">CÁLCULO DINÁMICO</string>
+    <string name="route_engine_title">Motor logístico</string>
+    <string name="route_engine_subtitle">Ajusta vehículo, combustible y hora de salida: el plan se recalcula al instante.</string>
+    <string name="route_vehicle_label">Vehículo</string>
+    <string name="route_vehicle_value">%1$.1f L/100 km</string>
+    <string name="route_fuel_label">Combustible</string>
+    <string name="route_surcharge_title">Recargo montaña / 4x4</string>
+    <string name="route_surcharge_body" formatted="false">Suma 15% al consumo por pendientes, lastre y aire acondicionado.</string>
+    <string name="route_surcharge_tag">+15% recargo</string>
+    <string name="route_departure_label">Hora de salida</string>
+    <string name="route_departure_dawn">05:30</string>
+    <string name="route_departure_morning">08:00</string>
+    <string name="route_departure_noon">12:00</string>
+    <string name="route_fuel_card_title">Combustible ida y vuelta</string>
+    <string name="route_fuel_round_trip">Distancia vial</string>
+    <string name="route_fuel_liters">Consumo estimado</string>
+    <string name="route_fuel_price">Precio referencial</string>
+    <string name="route_fuel_vehicle">Vehículo</string>
+    <string name="route_fuel_total">Costo de combustible</string>
+    <string name="route_tolls_eyebrow">IDA Y VUELTA</string>
+    <string name="route_tolls_title">Peajes</string>
+    <string name="route_tolls_total">Total en peajes</string>
+    <string name="route_tolls_each_way">por sentido</string>
+    <string name="route_tolls_each_way_value">%1$s · %2$s</string>
+    <string name="route_tolls_none">Tu ruta no cruza casetas de peaje.</string>
+    <string name="route_cash_alert_title">Efectivo obligatorio</string>
+    <string name="route_cash_alert_body">%1$s solo acepta efectivo. Lleva al menos %2$s para la ida y vuelta.</string>
+    <string name="route_cash_alert_names_separator">" + "</string>
+    <string name="route_cash_alert_tag">Solo efectivo</string>
+    <string name="route_weather_eyebrow">ESTIMADO POR TEMPORADA</string>
+    <string name="route_weather_title">Clima de expedición</string>
+    <string name="route_weather_range">%1$d°–%2$d°C</string>
+    <string name="route_weather_rain">Probabilidad de lluvia %1$d%%</string>
+    <string name="route_weather_note">Referencia offline según ecosistema y temporada; no es un pronóstico en vivo.</string>
+    <string name="route_food_eyebrow">SEGÚN TU HORARIO</string>
+    <string name="route_food_title">Paradas gastronómicas</string>
+    <string name="route_food_empty">Ninguna parada coincide con este horario. Prueba otra hora de salida.</string>
+    <string name="route_food_price">Precio %1$s</string>
+    <string name="route_saved_eyebrow">CONSULTA OFFLINE</string>
+    <string name="route_saved_title">Planes guardados</string>
+    <string name="route_saved_save">Guardar plan</string>
+    <string name="route_saved_empty">Guarda este plan para consultarlo cuando no tengas señal.</string>
+    <string name="route_saved_total">Total %1$s</string>
+    <string name="route_saved_meta">%1$s · %2$s</string>
+    <string name="route_saved_cash">Efectivo %1$s</string>
+
+    <!-- Guías locales -->
+    <string name="guides_eyebrow">RED CERTIFICADA · v0.2</string>
+    <string name="guides_title">Guías locales</string>
+    <string name="guides_subtitle">Guías certificados por destino, con tarifa referencial y contacto directo por WhatsApp.</string>
+    <string name="guides_filter_all">Todos</string>
+    <string name="guides_result_count">%1$d guías disponibles</string>
+    <string name="guides_result_filtered">%1$d de %2$d guías disponibles</string>
+    <string name="guides_verified">Verificado</string>
+    <string name="guides_rate">%1$s · tarifa referencial</string>
+    <string name="guides_destination_meta">%1$s · %2$s</string>
+    <string name="guides_whatsapp">WhatsApp</string>
+    <string name="guides_whatsapp_message">Hola %1$s, te escribo desde Panama-Trip. Quiero coordinar una salida a %2$s.</string>
+    <string name="guides_whatsapp_unavailable">No encontramos WhatsApp ni un navegador disponible.</string>
+    <string name="guides_empty_title">Todavía no hay guías publicados</string>
+    <string name="guides_empty_body">La red certificada se está cargando desde la base local.</string>
+    <string name="guides_no_match_title">Sin guías para ese destino</string>
+    <string name="guides_no_match_body">Prueba con otro destino o vuelve a ver el catálogo completo.</string>
+
+    <!-- Combustible, peajes, clima y comida -->
+    <string name="fuel_91">Gasolina 91</string>
+    <string name="fuel_95">Gasolina 95</string>
+    <string name="fuel_diesel">Diésel</string>
+    <string name="fuel_91_short">91</string>
+    <string name="fuel_95_short">95</string>
+    <string name="fuel_diesel_short">Diésel</string>
+    <string name="toll_panapass">Panapass</string>
+    <string name="toll_cash_only">Solo efectivo</string>
+    <string name="weather_clear">Despejado</string>
+    <string name="weather_partly_cloudy">Parcialmente nublado</string>
+    <string name="weather_cloudy">Nublado</string>
+    <string name="weather_misty">Neblinoso</string>
+    <string name="weather_rainy">Lluvioso</string>
+    <string name="advice_sunscreen">Protector solar</string>
+    <string name="advice_rain_gear">Impermeable</string>
+    <string name="advice_layers">Abrigo por capas</string>
+    <string name="advice_early_start">Salir temprano</string>
+    <string name="advice_insect_repellent">Repelente</string>
+    <string name="advice_water">Agua extra</string>
+    <string name="food_breakfast">Desayuno</string>
+    <string name="food_coffee">Café</string>
+    <string name="food_lunch">Almuerzo</string>
+    <string name="food_snack">Merienda</string>
+    <string name="food_dinner">Cena</string>
+    <string name="price_economic">Económica</string>
+    <string name="price_moderate">Moderada</string>
+    <string name="leg_outbound">Ida</string>
+    <string name="leg_return">Vuelta</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_english">Inglés</string>
+    <string name="language_french">Francés</string>
+    <string name="language_german">Alemán</string>
+    <string name="price_per_gallon">$%1$.2f / galón</string>
+    <string name="liters_value">%1$.1f L</string>
+    <string name="kilometers_value">%1$.1f km</string>
 
     <!-- Vehículos, ecosistemas y terreno -->
     <string name="vehicle_sedan">Sedán</string>
@@ -157,5 +260,6 @@
     <string name="notice_removed">Quitado de la colección.</string>
     <string name="notice_collection_created">Colección creada.</string>
     <string name="notice_route_ready">Ruta lista en Mi Ruta.</string>
+    <string name="notice_plan_saved">Plan guardado para consulta offline.</string>
     <string name="notice_action_failed">No pudimos completar la acción. Inténtalo otra vez.</string>
 </resources>

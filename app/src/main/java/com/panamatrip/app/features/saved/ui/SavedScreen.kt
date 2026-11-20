@@ -38,7 +38,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,11 +65,11 @@ fun SavedRoute(
     val viewModel: SavedViewModel = viewModel(factory = SavedViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
         viewModel.notices.collect { notice ->
-            snackbarHostState.showSnackbar(context.getString(notice.noticeTextRes()))
+            snackbarHostState.showSnackbar(resources.getString(notice.noticeTextRes()))
         }
     }
 

@@ -14,5 +14,6 @@ enum class UiNotice {
     REMOVED,
     COLLECTION_CREATED,
     ROUTE_READY,
+    PLAN_SAVED,
     ACTION_FAILED,
 }

@@ -11,6 +11,7 @@ fun UiNotice.noticeTextRes(): Int = when (this) {
     UiNotice.REMOVED -> R.string.notice_removed
     UiNotice.COLLECTION_CREATED -> R.string.notice_collection_created
     UiNotice.ROUTE_READY -> R.string.notice_route_ready
+    UiNotice.PLAN_SAVED -> R.string.notice_plan_saved
     UiNotice.ACTION_FAILED -> R.string.notice_action_failed
 }
 

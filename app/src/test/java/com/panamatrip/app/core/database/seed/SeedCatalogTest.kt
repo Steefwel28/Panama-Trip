@@ -13,7 +13,7 @@ class SeedCatalogTest {
     private val postIds = SeedCatalog.posts.map { it.id }.toSet()
 
     @Test
-    fun `catalog ships exactly the six agreed destinations`() {
+    fun `catalog ships exactly the eight agreed destinations`() {
         val expected = setOf(
             "cerro-picacho",
             "laguna-san-carlos",
@@ -21,9 +21,11 @@ class SeedCatalogTest {
             "cerro-azul",
             "cascada-el-salto",
             "la-yeguada",
+            "rio-lagarto",
+            "bahia-portobelo",
         )
 
-        assertEquals(6, SeedCatalog.destinations.size)
+        assertEquals(8, SeedCatalog.destinations.size)
         assertEquals(expected, destinationIds)
     }
 
@@ -97,6 +99,25 @@ class SeedCatalogTest {
         assertEquals(SeedCatalog.comments.size, SeedCatalog.comments.map { it.id }.toSet().size)
         assertEquals(SeedCatalog.collections.size, SeedCatalog.collections.map { it.id }.toSet().size)
         assertEquals(SeedCatalog.reviews.size, SeedCatalog.reviews.map { it.id }.toSet().size)
+        assertEquals(SeedCatalog.guides.size, SeedCatalog.guides.map { it.id }.toSet().size)
+    }
+
+    @Test
+    fun `guides cover every destination with certified contact details`() {
+        val guidesByDestination = SeedCatalog.guides.groupBy { it.destinationId }
+
+        assertEquals(SeedCatalog.guides.size, guidesByDestination.values.sumOf { it.size })
+        destinationIds.forEach { id ->
+            assertTrue("$id no tiene guía certificado", guidesByDestination[id].orEmpty().isNotEmpty())
+        }
+        SeedCatalog.guides.forEach { guide ->
+            assertTrue("${guide.id} apunta a destino inexistente", guide.destinationId in destinationIds)
+            assertTrue("${guide.id} sin tarifa", guide.rateCents > 0)
+            assertTrue("${guide.id} sin WhatsApp", guide.whatsappNumber.startsWith("507"))
+            assertTrue("${guide.id} teléfono inválido", guide.whatsappNumber.all(Char::isDigit))
+            assertTrue("${guide.id} sin idiomas", guide.languages.isNotEmpty())
+            assertTrue("${guide.id} no está verificado", guide.verified)
+        }
     }
 
     @Test

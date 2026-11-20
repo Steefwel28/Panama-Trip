@@ -6,16 +6,20 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.panamatrip.app.core.database.dao.CollectionDao
 import com.panamatrip.app.core.database.dao.DestinationDao
+import com.panamatrip.app.core.database.dao.GuideDao
 import com.panamatrip.app.core.database.dao.PostDao
 import com.panamatrip.app.core.database.dao.ReviewDao
+import com.panamatrip.app.core.database.dao.RoutePlanDao
 import com.panamatrip.app.core.database.dao.VehicleReportDao
 import com.panamatrip.app.core.database.entity.CollectionEntity
 import com.panamatrip.app.core.database.entity.CollectionPostEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
 import com.panamatrip.app.core.database.entity.DestinationEntity
+import com.panamatrip.app.core.database.entity.GuideEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.PostLikeEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
+import com.panamatrip.app.core.database.entity.RoutePlanEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
 
 @Database(
@@ -28,6 +32,8 @@ import com.panamatrip.app.core.database.entity.VehicleReportEntity
         CollectionEntity::class,
         CollectionPostEntity::class,
         ReviewEntity::class,
+        RoutePlanEntity::class,
+        GuideEntity::class,
     ],
     version = PanamaTripDatabase.VERSION,
     exportSchema = true,
@@ -44,8 +50,12 @@ abstract class PanamaTripDatabase : RoomDatabase() {
 
     abstract fun reviewDao(): ReviewDao
 
+    abstract fun routePlanDao(): RoutePlanDao
+
+    abstract fun guideDao(): GuideDao
+
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
         private const val DATABASE_NAME = "panama_trip.db"
 
         fun build(context: Context): PanamaTripDatabase =

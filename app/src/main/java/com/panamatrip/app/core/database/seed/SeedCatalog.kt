@@ -6,8 +6,8 @@ import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.model.VehicleType
 
 /**
- * Semilla editorial verificada de la v0.1. Es Kotlin puro para poder validar
- * coordenadas, colecciones y semáforos en pruebas JVM sin Android.
+ * Semilla editorial verificada de la v0.2. Es Kotlin puro para poder validar
+ * coordenadas, colecciones, semáforos y guías en pruebas JVM sin Android.
  *
  * Las coordenadas son puntos de referencia pública del istmo; el acceso final
  * siempre se confirma con el semáforo comunitario.
@@ -153,6 +153,53 @@ object SeedCatalog {
             recommendedVehicle = VehicleType.SEDAN,
             featuredOrder = 6,
         ),
+        SeedDestination(
+            id = "rio-lagarto",
+            name = "Río Lagarto",
+            province = "Colón",
+            ecosystem = Ecosystem.WATERFALL,
+            summary = "Saltos de agua dulce y pozas esmeralda escondidos tras Portobelo.",
+            description = "El río baja desde la serranía de Portobelo entre árboles de " +
+                "guayabo y helechos. Hay tres saltos principales y una poza profunda que " +
+                "se puede cruzar con cuidado. Es el plan perfecto cuando el Caribe está " +
+                "picado y la playa no es opción.",
+            accessNotes = "Últimos dos kilómetros de lastre con baches; un sedán alto llega " +
+                "con precaución. El estacionamiento es un claro de grava junto a la casa " +
+                "de la familia que cuida el sendero.",
+            parkingLatitude = 9.5489,
+            parkingLongitude = -79.6074,
+            attractionLatitude = 9.5530,
+            attractionLongitude = -79.6012,
+            heroImageUrl = "https://picsum.photos/seed/rio-lagarto/1200/1500",
+            walkDistanceMeters = 1200,
+            walkMinutes = 30,
+            elevationGainMeters = 140,
+            recommendedVehicle = VehicleType.SUV,
+            featuredOrder = 7,
+        ),
+        SeedDestination(
+            id = "bahia-portobelo",
+            name = "Bahía de Portobelo",
+            province = "Colón",
+            ecosystem = Ecosystem.LAGOON,
+            summary = "Manglares, fuerte histórico y aguas calmas al borde del Caribe colonense.",
+            description = "La bahía forma un abrigo natural que mezcla manglares, muelles " +
+                "de pescadores y las ruinas del fuerte San Jerónimo. Al amanecer se puede " +
+                "recorrer el malecón y observar garzas y martines pescadores sin multitudes.",
+            accessNotes = "Carretera asfaltada hasta el pueblo y estacionamiento público " +
+                "frente al malecón. Apto para cualquier vehículo; llegar antes de las 9 a.m. " +
+                "para encontrar espacio.",
+            parkingLatitude = 9.5512,
+            parkingLongitude = -79.6520,
+            attractionLatitude = 9.5560,
+            attractionLongitude = -79.6488,
+            heroImageUrl = "https://picsum.photos/seed/bahia-portobelo/1200/1500",
+            walkDistanceMeters = 700,
+            walkMinutes = 18,
+            elevationGainMeters = 12,
+            recommendedVehicle = VehicleType.SEDAN,
+            featuredOrder = 8,
+        ),
     )
 
     val vehicleReports: List<SeedVehicleReport> = listOf(
@@ -174,6 +221,12 @@ object SeedCatalog {
         SeedVehicleReport("vr-16", "cascada-el-salto", VehicleType.FOUR_BY_FOUR, AccessStatus.CLEAR, "Carla Méndez"),
         SeedVehicleReport("vr-17", "la-yeguada", VehicleType.SEDAN, AccessStatus.CLEAR, "Diego Aparicio"),
         SeedVehicleReport("vr-18", "la-yeguada", VehicleType.SUV, AccessStatus.CLEAR, "Sofía Lasso"),
+        SeedVehicleReport("vr-19", "rio-lagarto", VehicleType.SEDAN, AccessStatus.CAUTION, "Omar Cedeño"),
+        SeedVehicleReport("vr-20", "rio-lagarto", VehicleType.SUV, AccessStatus.CLEAR, "Anaís Bethancourt"),
+        SeedVehicleReport("vr-21", "rio-lagarto", VehicleType.FOUR_BY_FOUR, AccessStatus.CLEAR, "Omar Cedeño"),
+        SeedVehicleReport("vr-22", "bahia-portobelo", VehicleType.SEDAN, AccessStatus.CLEAR, "Anaís Bethancourt"),
+        SeedVehicleReport("vr-23", "bahia-portobelo", VehicleType.SUV, AccessStatus.CLEAR, "Rafael Beitia"),
+        SeedVehicleReport("vr-24", "bahia-portobelo", VehicleType.FOUR_BY_FOUR, AccessStatus.CLEAR, "Sofía Lasso"),
     )
 
     val posts: List<SeedPost> = listOf(
@@ -316,6 +369,94 @@ object SeedCatalog {
         SeedReview("rv-10", "cascada-el-salto", "Sofía Lasso", 4, "Bonito paseo familiar, aunque el acceso en lastre castiga al carro bajo.", 44),
         SeedReview("rv-11", "la-yeguada", "Diego Aparicio", 5, "Pinar fresco y lago tranquilo. Perfecto para un picnic con niños.", 8),
         SeedReview("rv-12", "la-yeguada", "Carla Méndez", 4, "Acceso pavimentado y estacionamiento amplio. Llevar abrigo.", 33),
+        SeedReview("rv-13", "rio-lagarto", "Anaís Bethancourt", 5, "Los saltos son una joya y el agua está helada. Ir temprano y con zapatos que agarren.", 5),
+        SeedReview("rv-14", "rio-lagarto", "Omar Cedeño", 4, "El último tramo de lastre castiga al carro bajo. Con SUV se llega sin drama.", 14),
+        SeedReview("rv-15", "bahia-portobelo", "Rafael Beitia", 5, "Amanecer sobre la bahía con garzas y veleros. El malecón está impecable.", 3),
+        SeedReview("rv-16", "bahia-portobelo", "Sofía Lasso", 4, "Muy fácil de llegar y perfecto para caminar. Llevar repelente al atardecer.", 20),
+    )
+
+    val guides: List<SeedGuide> = listOf(
+        SeedGuide(
+            id = "guide-picacho-rafael",
+            destinationId = "cerro-picacho",
+            name = "Rafael Beitia",
+            headline = "Cumbre y fotografía de amanecer en la cordillera de Chame.",
+            languages = listOf("SPANISH", "ENGLISH"),
+            rateCents = 4500,
+            whatsappNumber = "50761234501",
+        ),
+        SeedGuide(
+            id = "guide-picacho-mariela",
+            destinationId = "cerro-picacho",
+            name = "Mariela Cedeño",
+            headline = "Rutas 4x4, lectura de terreno y ascensión guiada al filo.",
+            languages = listOf("SPANISH", "ENGLISH", "FRENCH"),
+            rateCents = 6000,
+            whatsappNumber = "50761234502",
+        ),
+        SeedGuide(
+            id = "guide-laguna-sofia",
+            destinationId = "laguna-san-carlos",
+            name = "Sofía Lasso",
+            headline = "Avistamiento de aves y fotografía de humedales al amanecer.",
+            languages = listOf("SPANISH", "ENGLISH"),
+            rateCents = 3500,
+            whatsappNumber = "50761234503",
+        ),
+        SeedGuide(
+            id = "guide-ola-ivan",
+            destinationId = "los-picachos-de-ola",
+            name = "Iván Rodríguez",
+            headline = "Ascensión técnica, seguridad en quebradas y café de finca.",
+            languages = listOf("SPANISH"),
+            rateCents = 7000,
+            whatsappNumber = "50761234504",
+        ),
+        SeedGuide(
+            id = "guide-azul-valeria",
+            destinationId = "cerro-azul",
+            name = "Valeria Quintero",
+            headline = "Senderos de bosque nuboso para familias y principiantes.",
+            languages = listOf("SPANISH", "ENGLISH"),
+            rateCents = 3000,
+            whatsappNumber = "50761234505",
+        ),
+        SeedGuide(
+            id = "guide-salto-carla",
+            destinationId = "cascada-el-salto",
+            name = "Carla Méndez",
+            headline = "Cascadas de Boquete con primeros auxilios y ritmo pausado.",
+            languages = listOf("SPANISH", "ENGLISH", "GERMAN"),
+            rateCents = 5000,
+            whatsappNumber = "50761234506",
+        ),
+        SeedGuide(
+            id = "guide-yeguada-diego",
+            destinationId = "la-yeguada",
+            name = "Diego Aparicio",
+            headline = "Paseos interpretativos por el pinar y el lago volcánico.",
+            languages = listOf("SPANISH"),
+            rateCents = 2500,
+            whatsappNumber = "50761234507",
+        ),
+        SeedGuide(
+            id = "guide-lagarto-omar",
+            destinationId = "rio-lagarto",
+            name = "Omar Cedeño",
+            headline = "Saltos de Portobelo, navegación de pozas y fotografía de selva.",
+            languages = listOf("SPANISH", "FRENCH"),
+            rateCents = 5500,
+            whatsappNumber = "50761234508",
+        ),
+        SeedGuide(
+            id = "guide-portobelo-anais",
+            destinationId = "bahia-portobelo",
+            name = "Anaís Bethancourt",
+            headline = "Manglares, historia del fuerte y aves del Caribe colonense.",
+            languages = listOf("SPANISH", "ENGLISH"),
+            rateCents = 4000,
+            whatsappNumber = "50761234509",
+        ),
     )
 }
 
@@ -388,4 +529,15 @@ data class SeedReview(
     val body: String,
     val daysAgo: Int,
     val authorRole: String = SeedCatalog.CURATOR_ROLE,
+)
+
+data class SeedGuide(
+    val id: String,
+    val destinationId: String,
+    val name: String,
+    val headline: String,
+    val languages: List<String>,
+    val rateCents: Int,
+    val whatsappNumber: String,
+    val verified: Boolean = true,
 )

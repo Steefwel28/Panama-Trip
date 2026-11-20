@@ -3,12 +3,17 @@ package com.panamatrip.app.core.preview
 import com.panamatrip.app.core.database.seed.SeedCatalog
 import com.panamatrip.app.core.designsystem.labels.monthYearLabel
 import com.panamatrip.app.domain.geo.GeoCalculator
+import com.panamatrip.app.domain.logistics.FuelType
+import com.panamatrip.app.domain.logistics.LogisticsEngine
+import com.panamatrip.app.domain.logistics.LogisticsInput
 import com.panamatrip.app.domain.model.AccessStatus
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.Destination
 import com.panamatrip.app.domain.model.DestinationReview
 import com.panamatrip.app.domain.model.Ecosystem
 import com.panamatrip.app.domain.model.GeoPoint
+import com.panamatrip.app.domain.model.GuideLanguage
+import com.panamatrip.app.domain.model.LocalGuide
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.VehicleAccessSummary
 import com.panamatrip.app.domain.model.VehicleType
@@ -19,7 +24,11 @@ import com.panamatrip.app.features.explore.ui.DirectoryEntryUi
 import com.panamatrip.app.features.explore.ui.ExploreTab
 import com.panamatrip.app.features.explore.ui.ExploreUiState
 import com.panamatrip.app.features.explore.ui.FeedPostUi
+import com.panamatrip.app.features.guides.ui.GuideDestinationFilterUi
+import com.panamatrip.app.features.guides.ui.GuidesUiState
+import com.panamatrip.app.features.routeplan.ui.DepartureWindow
 import com.panamatrip.app.features.routeplan.ui.RoutePlanUiState
+import com.panamatrip.app.features.routeplan.ui.SavedPlanUi
 import com.panamatrip.app.features.saved.ui.SavedCollectionUi
 import com.panamatrip.app.features.saved.ui.SavedUiState
 import java.time.Instant
@@ -161,13 +170,63 @@ object PreviewFixtures {
     )
 
     fun routeState(): RoutePlanUiState.Content {
-        val destination = destinations.first()
         val origin = GeoPoint(8.9824, -79.5199)
-        val distance = GeoCalculator.distanceMeters(origin, destination.parking)
+        val destination = destinations.first { it.province == "Colón" }
+        val plan = LogisticsEngine.plan(
+            LogisticsInput(
+                origin = origin,
+                destination = destination,
+                vehicle = VehicleType.SUV,
+                fuelType = FuelType.GASOLINE_95,
+                mountainSurcharge = true,
+                departureMinuteOfDay = DepartureWindow.DAWN.minuteOfDay,
+                month = 11,
+            ),
+        )
+        val savedPlan = SavedPlanUi(
+            id = "preview-plan",
+            fuelType = FuelType.GASOLINE_95,
+            mountainSurcharge = true,
+            departureMinuteOfDay = DepartureWindow.DAWN.minuteOfDay,
+            totalCents = plan.totalRoundTripCents,
+            cashOnlyCents = plan.cashOnlyRoundTripCents,
+            createdAtEpochMillis = System.currentTimeMillis() - DAY_MILLIS,
+        )
         return RoutePlanUiState.Content(
             destination = destination,
-            originDistanceMeters = distance,
-            originDriveMinutes = GeoCalculator.estimatedDriveMinutes(distance),
+            vehicle = VehicleType.SUV,
+            fuelType = FuelType.GASOLINE_95,
+            surchargeEnabled = true,
+            departureWindow = DepartureWindow.DAWN,
+            plan = plan,
+            savedPlans = listOf(savedPlan),
+        )
+    }
+
+    fun guidesState(): GuidesUiState.Content {
+        val guides = SeedCatalog.guides.map { seed ->
+            val destination = destinations.first { it.id == seed.destinationId }
+            LocalGuide(
+                id = seed.id,
+                destinationId = seed.destinationId,
+                destinationName = destination.name,
+                province = destination.province,
+                name = seed.name,
+                headline = seed.headline,
+                languages = seed.languages.map { GuideLanguage.valueOf(it) },
+                rateUsdCents = seed.rateCents,
+                verified = seed.verified,
+                whatsappNumber = seed.whatsappNumber,
+            )
+        }
+        return GuidesUiState.Content(
+            guides = guides,
+            filters = guides
+                .map { GuideDestinationFilterUi(id = it.destinationId, name = it.destinationName) }
+                .distinctBy { it.id }
+                .sortedBy { it.name },
+            selectedDestinationId = null,
+            totalCount = guides.size,
         )
     }
 

@@ -5,13 +5,19 @@ import com.panamatrip.app.core.database.entity.CommentEntity
 import com.panamatrip.app.core.database.entity.DestinationEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
+import com.panamatrip.app.core.database.entity.RoutePlanEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
+import com.panamatrip.app.core.database.dao.GuideWithDestinationProjection
+import com.panamatrip.app.domain.logistics.FuelType
+import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.model.AccessStatus
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.Destination
 import com.panamatrip.app.domain.model.DestinationReview
 import com.panamatrip.app.domain.model.Ecosystem
 import com.panamatrip.app.domain.model.GeoPoint
+import com.panamatrip.app.domain.model.GuideLanguage
+import com.panamatrip.app.domain.model.LocalGuide
 import com.panamatrip.app.domain.model.PostComment
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
@@ -104,6 +110,63 @@ fun CollectionEntity.toDomain(postIds: List<String>, previewImageUrl: String?): 
         sortOrder = sortOrder,
     )
 
+fun GuideWithDestinationProjection.toDomain(): LocalGuide = LocalGuide(
+    id = id,
+    destinationId = destinationId,
+    destinationName = destinationName,
+    province = province,
+    name = name,
+    headline = headline,
+    languages = languages
+        .split(LANGUAGE_SEPARATOR)
+        .map { token -> token.trim() }
+        .filter { token -> token.isNotEmpty() }
+        .mapNotNull { token ->
+            runCatching { GuideLanguage.valueOf(token) }.getOrNull()
+        },
+    rateUsdCents = rateCents,
+    verified = verified,
+    whatsappNumber = whatsappNumber,
+)
+
+fun RoutePlanEntity.toDomain(): SavedRoutePlan = SavedRoutePlan(
+    id = id,
+    destinationId = destinationId,
+    destinationName = destinationName,
+    fuelType = enumOrDefault(fuelType, FuelType.GASOLINE_95),
+    vehicle = enumOrDefault(vehicleType, com.panamatrip.app.domain.model.VehicleType.SUV),
+    mountainSurcharge = mountainSurcharge,
+    departureMinuteOfDay = departureMinuteOfDay,
+    distanceMeters = distanceMeters,
+    driveMinutes = driveMinutes,
+    roundTripKilometers = roundTripKilometers,
+    fuelLiters = fuelLiters,
+    fuelCostCents = fuelCostCents,
+    tollCostCents = tollCostCents,
+    cashOnlyCents = cashOnlyCents,
+    totalCents = totalCents,
+    createdAtEpochMillis = createdAt,
+)
+
+fun SavedRoutePlan.toEntity(): RoutePlanEntity = RoutePlanEntity(
+    id = id,
+    destinationId = destinationId,
+    destinationName = destinationName,
+    fuelType = fuelType.name,
+    vehicleType = vehicle.name,
+    mountainSurcharge = mountainSurcharge,
+    departureMinuteOfDay = departureMinuteOfDay,
+    distanceMeters = distanceMeters,
+    driveMinutes = driveMinutes,
+    roundTripKilometers = roundTripKilometers,
+    fuelLiters = fuelLiters,
+    fuelCostCents = fuelCostCents,
+    tollCostCents = tollCostCents,
+    cashOnlyCents = cashOnlyCents,
+    totalCents = totalCents,
+    createdAt = createdAtEpochMillis,
+)
+
 /** Completa los tres vehículos para que la UI nunca tenga huecos. */
 private fun completeAccessMap(
     access: Map<VehicleType, VehicleAccessSummary>,
@@ -113,6 +176,7 @@ private fun completeAccessMap(
 
 private const val MIN_RATING = 1
 private const val MAX_RATING = 5
+private const val LANGUAGE_SEPARATOR = ","
 
 private inline fun <reified T : Enum<T>> enumOrDefault(raw: String?, fallback: T): T =
     raw?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: fallback

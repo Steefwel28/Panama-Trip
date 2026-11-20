@@ -7,6 +7,8 @@ import com.panamatrip.app.domain.model.PostComment
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.model.VehicleType
+import com.panamatrip.app.domain.model.LocalGuide
+import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.affinity.AffinitySnapshot
 import com.panamatrip.app.core.datastore.UserPreferences
 import kotlinx.coroutines.flow.Flow
@@ -44,4 +46,13 @@ interface PreferencesRepository {
     suspend fun recordLike(destination: com.panamatrip.app.domain.model.Destination)
     suspend fun recordSave(destination: com.panamatrip.app.domain.model.Destination)
     suspend fun recordView(destination: com.panamatrip.app.domain.model.Destination)
+}
+
+interface GuideRepository {
+    fun observeGuides(): Flow<List<LocalGuide>>
+}
+
+interface RoutePlanRepository {
+    fun observeSavedPlans(destinationId: String, limit: Int): Flow<List<SavedRoutePlan>>
+    suspend fun save(plan: SavedRoutePlan)
 }

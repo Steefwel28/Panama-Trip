@@ -3,10 +3,22 @@ package com.panamatrip.app.core.designsystem.labels
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.panamatrip.app.R
+import com.panamatrip.app.domain.logistics.FoodStopKind
+import com.panamatrip.app.domain.logistics.FuelType
+import com.panamatrip.app.domain.logistics.PriceRange
+import com.panamatrip.app.domain.logistics.RouteLeg
+import com.panamatrip.app.domain.logistics.TollPayment
+import com.panamatrip.app.domain.logistics.WeatherAdvice
+import com.panamatrip.app.domain.logistics.WeatherCondition
 import com.panamatrip.app.domain.model.AccessStatus
 import com.panamatrip.app.domain.model.Ecosystem
+import com.panamatrip.app.domain.model.GuideLanguage
 import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.model.VehicleType
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -96,4 +108,125 @@ fun likesLabel(count: Int): String = stringResource(R.string.likes_count, count)
 @Composable
 fun commentsLabel(count: Int): String = stringResource(R.string.comments_count, count)
 
+@Composable
+fun FuelType.shortLabel(): String = stringResource(
+    when (this) {
+        FuelType.GASOLINE_91 -> R.string.fuel_91_short
+        FuelType.GASOLINE_95 -> R.string.fuel_95_short
+        FuelType.DIESEL -> R.string.fuel_diesel_short
+    },
+)
+
+@Composable
+fun FuelType.displayName(): String = stringResource(
+    when (this) {
+        FuelType.GASOLINE_91 -> R.string.fuel_91
+        FuelType.GASOLINE_95 -> R.string.fuel_95
+        FuelType.DIESEL -> R.string.fuel_diesel
+    },
+)
+
+@Composable
+fun TollPayment.displayName(): String = stringResource(
+    when (this) {
+        TollPayment.PANAPASS -> R.string.toll_panapass
+        TollPayment.CASH_ONLY -> R.string.toll_cash_only
+    },
+)
+
+@Composable
+fun WeatherCondition.displayName(): String = stringResource(
+    when (this) {
+        WeatherCondition.CLEAR -> R.string.weather_clear
+        WeatherCondition.PARTLY_CLOUDY -> R.string.weather_partly_cloudy
+        WeatherCondition.CLOUDY -> R.string.weather_cloudy
+        WeatherCondition.MISTY -> R.string.weather_misty
+        WeatherCondition.RAINY -> R.string.weather_rainy
+    },
+)
+
+@Composable
+fun WeatherAdvice.displayName(): String = stringResource(
+    when (this) {
+        WeatherAdvice.SUNSCREEN -> R.string.advice_sunscreen
+        WeatherAdvice.RAIN_GEAR -> R.string.advice_rain_gear
+        WeatherAdvice.LAYERS -> R.string.advice_layers
+        WeatherAdvice.EARLY_START -> R.string.advice_early_start
+        WeatherAdvice.INSECT_REPELLENT -> R.string.advice_insect_repellent
+        WeatherAdvice.WATER -> R.string.advice_water
+    },
+)
+
+@Composable
+fun FoodStopKind.displayName(): String = stringResource(
+    when (this) {
+        FoodStopKind.BREAKFAST -> R.string.food_breakfast
+        FoodStopKind.COFFEE -> R.string.food_coffee
+        FoodStopKind.LUNCH -> R.string.food_lunch
+        FoodStopKind.SNACK -> R.string.food_snack
+        FoodStopKind.DINNER -> R.string.food_dinner
+    },
+)
+
+@Composable
+fun PriceRange.displayName(): String = stringResource(
+    when (this) {
+        PriceRange.ECONOMIC -> R.string.price_economic
+        PriceRange.MODERATE -> R.string.price_moderate
+    },
+)
+
+@Composable
+fun RouteLeg.displayName(): String = stringResource(
+    when (this) {
+        RouteLeg.OUTBOUND -> R.string.leg_outbound
+        RouteLeg.RETURN -> R.string.leg_return
+    },
+)
+
+@Composable
+fun GuideLanguage.displayName(): String = stringResource(
+    when (this) {
+        GuideLanguage.SPANISH -> R.string.language_spanish
+        GuideLanguage.ENGLISH -> R.string.language_english
+        GuideLanguage.FRENCH -> R.string.language_french
+        GuideLanguage.GERMAN -> R.string.language_german
+    },
+)
+
+fun usdLabel(cents: Int): String = String.format(Locale.US, "\$%.2f", cents / CENTS_PER_DOLLAR)
+
+@Composable
+fun gallonsPriceLabel(cents: Int): String =
+    stringResource(R.string.price_per_gallon, cents / CENTS_PER_DOLLAR.toFloat())
+
+@Composable
+fun litersLabel(liters: Double): String =
+    stringResource(R.string.liters_value, liters.toFloat())
+
+@Composable
+fun kilometersLabel(kilometers: Double): String =
+    stringResource(R.string.kilometers_value, kilometers.toFloat())
+
+fun clockLabel(minuteOfDay: Int): String {
+    val normalized = ((minuteOfDay % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+    return String.format(
+        Locale.US,
+        "%02d:%02d",
+        normalized / MINUTES_PER_HOUR,
+        normalized % MINUTES_PER_HOUR,
+    )
+}
+
+fun planTimestampLabel(epochMillis: Long): String =
+    PlanTimestampFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+
+private object PlanTimestampFormatter {
+    private val formatter = DateTimeFormatter.ofPattern("dd MMM · HH:mm", Locale.forLanguageTag("es-PA"))
+    fun format(value: ZonedDateTime): String = formatter.format(value)
+}
+
 private const val METERS_PER_KILOMETER = 1000
+private const val CENTS_PER_DOLLAR = 100.0
+private const val MINUTES_PER_DAY = 24 * 60
+private const val MINUTES_PER_HOUR = 60

@@ -1,32 +1,32 @@
 package com.panamatrip.app.features.routeplan.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,22 +35,18 @@ import com.panamatrip.app.R
 import com.panamatrip.app.core.designsystem.component.EmptyState
 import com.panamatrip.app.core.designsystem.component.ErrorState
 import com.panamatrip.app.core.designsystem.component.InfoNotice
-import com.panamatrip.app.core.designsystem.component.OverlayTag
 import com.panamatrip.app.core.designsystem.component.ScreenLoading
-import com.panamatrip.app.core.designsystem.component.SectionHeader
 import com.panamatrip.app.core.designsystem.component.SecondaryActionButton
+import com.panamatrip.app.core.designsystem.component.SectionHeader
 import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
-import com.panamatrip.app.core.designsystem.component.tonalGradient
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
-import com.panamatrip.app.core.designsystem.labels.distanceLabel
-import com.panamatrip.app.core.designsystem.labels.driveLabel
-import com.panamatrip.app.core.designsystem.labels.elevationLabel
-import com.panamatrip.app.core.designsystem.labels.walkLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.intents.MapIntents
 import com.panamatrip.app.core.intents.launchFirstAvailable
+import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
+import com.panamatrip.app.domain.logistics.FuelType
 import com.panamatrip.app.domain.model.Destination
 
 @Composable
@@ -61,9 +57,18 @@ fun RoutePlanRoute(
     val viewModel: RoutePlanViewModel = viewModel(factory = RoutePlanViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.notices.collect { notice ->
+            snackbarHostState.showSnackbar(resources.getString(notice.noticeTextRes()))
+        }
+    }
 
     RoutePlanScreen(
         state = state,
+        snackbarHostState = snackbarHostState,
         onRetry = viewModel::retry,
         onExplore = {
             viewModel.clearRoute()
@@ -75,45 +80,65 @@ fun RoutePlanRoute(
         onGoogleMaps = { destination ->
             context.launchFirstAvailable(MapIntents.googleMaps(destination.parking, destination.name))
         },
+        onSelectFuel = viewModel::selectFuel,
+        onSetSurcharge = viewModel::setSurcharge,
+        onSelectDeparture = viewModel::selectDeparture,
+        onSavePlan = viewModel::saveCurrentPlan,
     )
 }
 
 @Composable
 fun RoutePlanScreen(
     state: RoutePlanUiState,
+    snackbarHostState: SnackbarHostState,
     onRetry: () -> Unit,
     onExplore: () -> Unit,
     onWaze: (Destination) -> Unit,
     onGoogleMaps: (Destination) -> Unit,
+    onSelectFuel: (FuelType) -> Unit,
+    onSetSurcharge: (Boolean) -> Unit,
+    onSelectDeparture: (DepartureWindow) -> Unit,
+    onSavePlan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        RouteHeader(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars))
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            RouteHeader(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars))
 
-        when (state) {
-            RoutePlanUiState.Loading -> ScreenLoading()
-            is RoutePlanUiState.Error -> ErrorState(
-                title = stringResource(R.string.error_title),
-                body = stringResource(R.string.error_body),
-                retryLabel = stringResource(R.string.error_retry),
-                onRetry = onRetry,
-                modifier = Modifier.padding(top = Dimens.sectionGap),
-            )
-            RoutePlanUiState.Empty -> EmptyState(
-                title = stringResource(R.string.route_empty_title),
-                body = stringResource(R.string.route_empty_body),
-                actionLabel = stringResource(R.string.route_empty_action),
-                onAction = onExplore,
-                modifier = Modifier.padding(top = Dimens.sectionGap),
-                icon = PanamaIcons.Route,
-            )
-            is RoutePlanUiState.Content -> RoutePlanContent(
-                content = state,
-                onWaze = onWaze,
-                onGoogleMaps = onGoogleMaps,
-                onExplore = onExplore,
-            )
+            when (state) {
+                RoutePlanUiState.Loading -> ScreenLoading()
+                is RoutePlanUiState.Error -> ErrorState(
+                    title = stringResource(R.string.error_title),
+                    body = stringResource(R.string.error_body),
+                    retryLabel = stringResource(R.string.error_retry),
+                    onRetry = onRetry,
+                    modifier = Modifier.padding(top = Dimens.sectionGap),
+                )
+                RoutePlanUiState.Empty -> EmptyState(
+                    title = stringResource(R.string.route_empty_title),
+                    body = stringResource(R.string.route_empty_body),
+                    actionLabel = stringResource(R.string.route_empty_action),
+                    onAction = onExplore,
+                    modifier = Modifier.padding(top = Dimens.sectionGap),
+                    icon = PanamaIcons.Route,
+                )
+                is RoutePlanUiState.Content -> RoutePlanContent(
+                    content = state,
+                    onWaze = onWaze,
+                    onGoogleMaps = onGoogleMaps,
+                    onExplore = onExplore,
+                    onSelectFuel = onSelectFuel,
+                    onSetSurcharge = onSetSurcharge,
+                    onSelectDeparture = onSelectDeparture,
+                    onSavePlan = onSavePlan,
+                )
+            }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }
 
@@ -147,6 +172,10 @@ private fun RoutePlanContent(
     onWaze: (Destination) -> Unit,
     onGoogleMaps: (Destination) -> Unit,
     onExplore: () -> Unit,
+    onSelectFuel: (FuelType) -> Unit,
+    onSetSurcharge: (Boolean) -> Unit,
+    onSelectDeparture: (DepartureWindow) -> Unit,
+    onSavePlan: () -> Unit,
 ) {
     val destination = content.destination
     LazyColumn(
@@ -204,46 +233,87 @@ private fun RoutePlanContent(
             )
         }
 
-        item(key = "details") {
+        item(key = "details_header") {
             SectionHeader(
                 title = stringResource(R.string.route_logistics_title),
                 eyebrow = stringResource(R.string.route_logistics_eyebrow),
             )
         }
 
-        item(key = "origin") {
-            InfoRow(
-                label = stringResource(R.string.route_origin_label),
-                value = stringResource(
-                    R.string.route_origin_value,
-                    distanceLabel(content.originDistanceMeters),
-                    driveLabel(content.originDriveMinutes),
-                ),
+        item(key = "details") {
+            RouteDetailsCard(content = content)
+        }
+
+        item(key = "engine_header") {
+            SectionHeader(
+                title = stringResource(R.string.route_engine_title),
+                eyebrow = stringResource(R.string.route_engine_eyebrow),
+                subtitle = stringResource(R.string.route_engine_subtitle),
             )
         }
 
-        item(key = "walk") {
-            InfoRow(
-                label = stringResource(R.string.route_walk_label),
-                value = walkLabel(destination.walkDistanceMeters, destination.walkMinutes),
+        item(key = "engine") {
+            LogisticsControls(
+                content = content,
+                onSelectFuel = onSelectFuel,
+                onSetSurcharge = onSetSurcharge,
+                onSelectDeparture = onSelectDeparture,
             )
         }
 
-        item(key = "elevation") {
-            InfoRow(
-                label = stringResource(R.string.route_elevation_label),
-                value = elevationLabel(destination.elevationGainMeters),
+        item(key = "fuel") {
+            FuelCard(plan = content.plan)
+        }
+
+        item(key = "tolls_header") {
+            SectionHeader(
+                title = stringResource(R.string.route_tolls_title),
+                eyebrow = stringResource(R.string.route_tolls_eyebrow),
             )
         }
 
-        item(key = "attraction") {
-            InfoRow(
-                label = stringResource(R.string.route_attraction_coords_label),
-                value = destination.attraction.formatted,
+        item(key = "tolls") {
+            TollSection(plan = content.plan)
+        }
+
+        item(key = "weather_header") {
+            SectionHeader(
+                title = stringResource(R.string.route_weather_title),
+                eyebrow = stringResource(R.string.route_weather_eyebrow),
+            )
+        }
+
+        item(key = "weather") {
+            WeatherCard(weather = content.plan.weather)
+        }
+
+        item(key = "food_header") {
+            SectionHeader(
+                title = stringResource(R.string.route_food_title),
+                eyebrow = stringResource(R.string.route_food_eyebrow),
+            )
+        }
+
+        item(key = "food") {
+            FoodStopsSection(suggestions = content.plan.foodStops)
+        }
+
+        item(key = "saved_header") {
+            SectionHeader(
+                title = stringResource(R.string.route_saved_title),
+                eyebrow = stringResource(R.string.route_saved_eyebrow),
+            )
+        }
+
+        item(key = "saved") {
+            SavedPlansSection(
+                savedPlans = content.savedPlans,
+                onSavePlan = onSavePlan,
             )
         }
 
         item(key = "change") {
+            Spacer(modifier = Modifier.height(Dimens.tightGap))
             TextButton(onClick = onExplore) {
                 Text(
                     text = stringResource(R.string.route_change_destination),
@@ -253,75 +323,3 @@ private fun RoutePlanContent(
         }
     }
 }
-
-@Composable
-private fun ParkingMapPanel(destination: Destination) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(MAP_PANEL_HEIGHT)
-            .clip(RoundedCornerShape(Dimens.cardCorner))
-            .background(tonalGradient("parking-${destination.id}")),
-    ) {
-        OverlayTag(
-            text = stringResource(R.string.route_parking_label),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(Dimens.itemGap),
-        )
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.92f),
-                shape = RoundedCornerShape(Dimens.innerCorner),
-                tonalElevation = Dimens.raisedElevation,
-            ) {
-                Icon(
-                    imageVector = PanamaIcons.Pin,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .padding(Dimens.itemGap)
-                        .size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Text(
-                text = destination.parking.formatted,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(Dimens.innerCorner),
-        tonalElevation = Dimens.tonalElevation,
-    ) {
-        Row(
-            modifier = Modifier.padding(Dimens.itemGap),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
-}
-
-private val MAP_PANEL_HEIGHT = 220.dp

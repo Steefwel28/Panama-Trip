@@ -113,3 +113,41 @@ data class ReviewEntity(
     val visitLabel: String,
     val createdAt: Long,
 )
+
+@Entity(
+    tableName = "route_plans",
+    indices = [Index("destinationId"), Index("createdAt")],
+)
+data class RoutePlanEntity(
+    @PrimaryKey val id: String,
+    val destinationId: String,
+    val destinationName: String,
+    val fuelType: String,
+    val vehicleType: String,
+    val mountainSurcharge: Boolean,
+    val departureMinuteOfDay: Int,
+    val distanceMeters: Int,
+    val driveMinutes: Int,
+    val roundTripKilometers: Double,
+    val fuelLiters: Double,
+    val fuelCostCents: Int,
+    val tollCostCents: Int,
+    val cashOnlyCents: Int,
+    val totalCents: Int,
+    val createdAt: Long,
+)
+
+@Entity(
+    tableName = "guides",
+    indices = [Index("destinationId")],
+)
+data class GuideEntity(
+    @PrimaryKey val id: String,
+    val destinationId: String,
+    val name: String,
+    val headline: String,
+    val languages: String,
+    val rateCents: Int,
+    val verified: Boolean,
+    val whatsappNumber: String,
+)

@@ -27,12 +27,14 @@ import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.features.destinationdetail.ui.DestinationDetailRoute
 import com.panamatrip.app.features.explore.ui.ExploreRoute
+import com.panamatrip.app.features.guides.ui.GuidesRoute
 import com.panamatrip.app.features.routeplan.ui.RoutePlanRoute
 import com.panamatrip.app.features.saved.ui.SavedRoute
 
 object Routes {
     const val EXPLORE = "explore"
     const val SAVED = "saved"
+    const val GUIDES = "guides"
     const val ROUTE = "route?destinationId={destinationId}"
     const val ROUTE_BASE = "route"
     const val DESTINATION_DETAIL = "destination/{destinationId}"
@@ -59,6 +61,12 @@ private val bottomTabs = listOf(
         R.string.nav_saved,
         PanamaIcons.BookmarkOutline,
         PanamaIcons.Bookmark,
+    ),
+    BottomTab(
+        Routes.GUIDES,
+        R.string.nav_guides,
+        PanamaIcons.Verified,
+        PanamaIcons.Verified,
     ),
 )
 
@@ -128,6 +136,9 @@ fun PanamaTripApp(container: AppContainer) {
                     onExplore = { navController.navigateToTab(Routes.EXPLORE) },
                 )
             }
+            composable(Routes.GUIDES) {
+                GuidesRoute(container = container)
+            }
         }
     }
 }
@@ -170,4 +181,7 @@ private fun NavHostController.navigateToTab(route: String) {
 }
 
 private fun isTopLevelRoute(route: String): Boolean =
-    route == Routes.EXPLORE || route == Routes.SAVED || route.startsWith(Routes.ROUTE_BASE)
+    route == Routes.EXPLORE ||
+        route == Routes.SAVED ||
+        route == Routes.GUIDES ||
+        route.startsWith(Routes.ROUTE_BASE)

@@ -4,6 +4,7 @@ import com.panamatrip.app.core.database.entity.CollectionEntity
 import com.panamatrip.app.core.database.entity.CollectionPostEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
 import com.panamatrip.app.core.database.entity.DestinationEntity
+import com.panamatrip.app.core.database.entity.GuideEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
@@ -26,6 +27,7 @@ class DatabaseSeeder(private val database: PanamaTripDatabase) {
         seedComments(now)
         seedCollections(now)
         seedReviews(now)
+        seedGuides()
     }
 
     private suspend fun seedDestinations() {
@@ -161,9 +163,28 @@ class DatabaseSeeder(private val database: PanamaTripDatabase) {
         )
     }
 
+    private suspend fun seedGuides() {
+        if (database.guideDao().count() > 0) return
+        database.guideDao().insertAll(
+            SeedCatalog.guides.map { seed ->
+                GuideEntity(
+                    id = seed.id,
+                    destinationId = seed.destinationId,
+                    name = seed.name,
+                    headline = seed.headline,
+                    languages = seed.languages.joinToString(separator = LANGUAGE_SEPARATOR),
+                    rateCents = seed.rateCents,
+                    verified = seed.verified,
+                    whatsappNumber = seed.whatsappNumber,
+                )
+            },
+        )
+    }
+
     private companion object {
         const val MILLIS_PER_MINUTE = 60_000L
         const val MILLIS_PER_HOUR = 3_600_000L
         const val MILLIS_PER_DAY = 86_400_000L
+        const val LANGUAGE_SEPARATOR = ","
     }
 }

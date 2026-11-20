@@ -8,9 +8,11 @@ import com.panamatrip.app.core.database.entity.CollectionEntity
 import com.panamatrip.app.core.database.entity.CollectionPostEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
 import com.panamatrip.app.core.database.entity.DestinationEntity
+import com.panamatrip.app.core.database.entity.GuideEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.PostLikeEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
+import com.panamatrip.app.core.database.entity.RoutePlanEntity
 import com.panamatrip.app.core.database.entity.VehicleReportEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -138,5 +140,53 @@ interface ReviewDao {
     suspend fun insertAll(items: List<ReviewEntity>)
 
     @Query("SELECT COUNT(*) FROM reviews")
+    suspend fun count(): Int
+}
+
+@Dao
+interface RoutePlanDao {
+    @Query(
+        "SELECT * FROM route_plans WHERE destinationId = :destinationId " +
+            "ORDER BY createdAt DESC LIMIT :limit",
+    )
+    fun observeRecentForDestination(
+        destinationId: String,
+        limit: Int,
+    ): Flow<List<RoutePlanEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(plan: RoutePlanEntity)
+
+    @Query("SELECT COUNT(*) FROM route_plans")
+    suspend fun count(): Int
+}
+
+data class GuideWithDestinationProjection(
+    val id: String,
+    val destinationId: String,
+    val name: String,
+    val headline: String,
+    val languages: String,
+    val rateCents: Int,
+    val verified: Boolean,
+    val whatsappNumber: String,
+    val destinationName: String,
+    val province: String,
+)
+
+@Dao
+interface GuideDao {
+    @Query(
+        "SELECT g.id, g.destinationId, g.name, g.headline, g.languages, g.rateCents, " +
+            "g.verified, g.whatsappNumber, d.name AS destinationName, d.province AS province " +
+            "FROM guides g INNER JOIN destinations d ON d.id = g.destinationId " +
+            "ORDER BY d.featuredOrder ASC, g.verified DESC, g.name ASC",
+    )
+    fun observeAll(): Flow<List<GuideWithDestinationProjection>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<GuideEntity>)
+
+    @Query("SELECT COUNT(*) FROM guides")
     suspend fun count(): Int
 }
