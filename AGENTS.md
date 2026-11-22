@@ -22,3 +22,7 @@ Aplicación nativa Android minimalista (Material Design 3) para exploración de 
 - Usa Material 3 con Dynamic Color + paleta personalizada (verde selva profundo, piedra volcánica y acentos terracota).
 - Prohibido usar bordes grises (`BorderStroke`) para separar tarjetas: usa elevación tonal con `surfaceContainerLow` y `surfaceContainerHigh`.
 - Implementa transiciones suaves (`AnimatedVisibility` / `SharedTransitionLayout`) y esquinas redondeadas amplias (16.dp a 24.dp).
+
+## Idioma Obligatorio de Comunicación
+- Responde y narra **siempre en español latinoamericano natural**, incluyendo tus comentarios intermedios antes y después de ejecutar comandos, lecturas o ediciones de archivos.
+- Nunca cambies al inglés para explicar qué vas a hacer, aunque `@SPEC.md` o las skills internas estén escritas en inglés.
