@@ -62,6 +62,7 @@ import com.panamatrip.app.core.designsystem.labels.elevationLabel
 import com.panamatrip.app.core.designsystem.labels.speedLabel
 import com.panamatrip.app.core.designsystem.labels.trackTimestampLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.RecorderStatus
@@ -430,7 +431,7 @@ private fun TrackStatTile(
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium,
+                style = MetricType.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -515,13 +516,14 @@ private fun RecordedTrackRow(track: RecordedTrackUi) {
                         distanceLabel(track.distanceMeters),
                         durationLabel(track.activeDurationMillis),
                     ),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MetricType.Small,
                     color = MaterialTheme.colorScheme.tertiary,
                 )
             }
             TonalTag(
                 text = elevationLabel(track.elevationGainMeters),
                 tone = Tone.Secondary,
+                style = MetricType.Small,
             )
         }
     }

@@ -51,6 +51,7 @@ import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.displayName
 import com.panamatrip.app.core.designsystem.labels.usdLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.core.intents.WhatsAppIntents
 import com.panamatrip.app.core.intents.launchFirstAvailable
 import com.panamatrip.app.di.AppContainer
@@ -311,9 +312,14 @@ private fun GuideCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.guides_rate, usdLabel(guide.rateUsdCents)),
-                        style = MaterialTheme.typography.titleMedium,
+                        text = usdLabel(guide.rateUsdCents),
+                        style = MetricType.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.guides_rate_suffix),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 FilledTonalButton(

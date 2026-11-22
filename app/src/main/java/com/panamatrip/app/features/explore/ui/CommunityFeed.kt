@@ -167,10 +167,12 @@ private fun CommunityPostCard(
                         MetricItem(
                             label = stringResource(R.string.metric_walk),
                             value = walkLabel(post.walkDistanceMeters, post.walkMinutes),
+                            numeric = true,
                         ),
                         MetricItem(
                             label = stringResource(R.string.metric_elevation),
                             value = elevationLabel(destination.elevationGainMeters),
+                            numeric = true,
                         ),
                     ),
                 )

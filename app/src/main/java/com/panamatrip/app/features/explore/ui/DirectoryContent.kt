@@ -35,7 +35,9 @@ import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.displayName
 import com.panamatrip.app.core.designsystem.labels.distanceLabel
 import com.panamatrip.app.core.designsystem.labels.driveLabel
+import com.panamatrip.app.core.designsystem.labels.elevationLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.domain.geo.DistanceBand
 import com.panamatrip.app.domain.model.Ecosystem
 import com.panamatrip.app.domain.model.VehicleType
@@ -210,7 +212,7 @@ private fun DestinationRow(
                 ) {
                     Text(
                         text = distanceLabel(entry.distanceMeters),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MetricType.Small,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
@@ -220,7 +222,7 @@ private fun DestinationRow(
                     )
                     Text(
                         text = driveLabel(entry.driveMinutes),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MetricType.Small,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -232,6 +234,11 @@ private fun DestinationRow(
                     TonalTag(
                         text = destination.recommendedVehicle.displayName(),
                         tone = Tone.Secondary,
+                    )
+                    TonalTag(
+                        text = elevationLabel(destination.elevationGainMeters),
+                        tone = Tone.Neutral,
+                        style = MetricType.Small,
                     )
                     VehicleAccessDots(summaries = destination.vehicleAccess)
                 }

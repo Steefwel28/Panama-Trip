@@ -168,14 +168,14 @@
     <string name="route_saved_cash">Efectivo %1$s</string>
 
     <!-- Guías locales -->
-    <string name="guides_eyebrow">RED CERTIFICADA · v0.2</string>
+    <string name="guides_eyebrow">RED CERTIFICADA · v0.3</string>
     <string name="guides_title">Guías locales</string>
     <string name="guides_subtitle">Guías certificados por destino, con tarifa referencial y contacto directo por WhatsApp.</string>
     <string name="guides_filter_all">Todos</string>
     <string name="guides_result_count">%1$d guías disponibles</string>
     <string name="guides_result_filtered">%1$d de %2$d guías disponibles</string>
     <string name="guides_verified">Verificado</string>
-    <string name="guides_rate">%1$s · tarifa referencial</string>
+    <string name="guides_rate_suffix">Tarifa referencial</string>
     <string name="guides_destination_meta">%1$s · %2$s</string>
     <string name="guides_whatsapp">WhatsApp</string>
     <string name="guides_whatsapp_message">Hola %1$s, te escribo desde Panama-Trip. Quiero coordinar una salida a %2$s.</string>

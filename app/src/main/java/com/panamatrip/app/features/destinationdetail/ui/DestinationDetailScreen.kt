@@ -55,6 +55,7 @@ import com.panamatrip.app.core.designsystem.labels.elevationLabel
 import com.panamatrip.app.core.designsystem.labels.ratingOverlayLabel
 import com.panamatrip.app.core.designsystem.labels.walkLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.core.intents.MapIntents
 import com.panamatrip.app.core.intents.launchFirstAvailable
 import com.panamatrip.app.di.AppContainer
@@ -191,6 +192,7 @@ private fun DetailContent(
                         TonalTag(
                             text = elevationLabel(destination.elevationGainMeters),
                             tone = Tone.Neutral,
+                            style = MetricType.Small,
                         )
                     }
                     InfoNotice(
@@ -419,7 +421,7 @@ private fun CoordinateCard(
             )
             Text(
                 text = coordinates,
-                style = MaterialTheme.typography.titleMedium,
+                style = MetricType.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(4.dp))

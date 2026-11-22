@@ -1,5 +1,6 @@
 package com.panamatrip.app.features.routeplan.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,12 +55,16 @@ import com.panamatrip.app.core.designsystem.labels.shortLabel
 import com.panamatrip.app.core.designsystem.labels.usdLabel
 import com.panamatrip.app.core.designsystem.labels.walkLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.domain.logistics.FoodStopSuggestion
 import com.panamatrip.app.domain.logistics.FuelCalculator
 import com.panamatrip.app.domain.logistics.FuelType
 import com.panamatrip.app.domain.logistics.LogisticsPlan
 import com.panamatrip.app.domain.logistics.WeatherOutlook
 import com.panamatrip.app.domain.model.Destination
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 internal fun ParkingMapPanel(destination: Destination) {
@@ -65,6 +75,10 @@ internal fun ParkingMapPanel(destination: Destination) {
             .clip(RoundedCornerShape(Dimens.cardCorner))
             .background(tonalGradient("parking-${destination.id}")),
     ) {
+        TopographicContours(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = CONTOUR_ALPHA),
+            modifier = Modifier.matchParentSize(),
+        )
         OverlayTag(
             text = stringResource(R.string.route_parking_label),
             modifier = Modifier
@@ -92,7 +106,7 @@ internal fun ParkingMapPanel(destination: Destination) {
             }
             Text(
                 text = destination.parking.formatted,
-                style = MaterialTheme.typography.labelMedium,
+                style = MetricType.Small,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -188,6 +202,7 @@ private fun VehicleBlock(content: RoutePlanUiState.Content) {
                 FuelCalculator.consumptionLitersPer100Km(content.vehicle).toFloat(),
             ),
             tone = Tone.Neutral,
+            style = MetricType.Small,
         )
     }
 }
@@ -334,17 +349,19 @@ internal fun FuelCard(plan: LogisticsPlan) {
             }
             Text(
                 text = usdLabel(fuel.costCents),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MetricType.Large,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.itemGap)) {
                 FuelStat(
                     label = stringResource(R.string.route_fuel_round_trip),
                     value = kilometersLabel(fuel.roundTripKilometers),
+                    numeric = true,
                     modifier = Modifier.weight(1f),
                 )
                 FuelStat(
                     label = stringResource(R.string.route_fuel_liters),
                     value = litersLabel(fuel.effectiveLiters),
+                    numeric = true,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -352,6 +369,7 @@ internal fun FuelCard(plan: LogisticsPlan) {
                 FuelStat(
                     label = stringResource(R.string.route_fuel_price),
                     value = gallonsPriceLabel(fuel.pricePerGallonCents),
+                    numeric = true,
                     modifier = Modifier.weight(1f),
                 )
                 FuelStat(
@@ -368,6 +386,7 @@ internal fun FuelCard(plan: LogisticsPlan) {
 private fun FuelStat(
     label: String,
     value: String,
+    numeric: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -376,7 +395,10 @@ private fun FuelStat(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = LABEL_ALPHA),
         )
-        Text(text = value, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = value,
+            style = if (numeric) MetricType.Medium else MaterialTheme.typography.titleMedium,
+        )
     }
 }
 
@@ -438,7 +460,7 @@ internal fun TollSection(plan: LogisticsPlan) {
                     )
                     Text(
                         text = usdLabel(plan.tollRoundTripCents),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MetricType.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -610,7 +632,7 @@ private fun FoodStopCard(suggestion: FoodStopSuggestion) {
                 ) {
                     Text(
                         text = clockLabel(suggestion.clockMinuteOfDay),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MetricType.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
@@ -721,7 +743,7 @@ private fun SavedPlanRow(plan: SavedPlanUi) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = stringResource(R.string.route_saved_total, usdLabel(plan.totalCents)),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MetricType.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (plan.cashOnlyCents > 0) {
@@ -730,7 +752,7 @@ private fun SavedPlanRow(plan: SavedPlanUi) {
                             R.string.route_saved_cash,
                             usdLabel(plan.cashOnlyCents),
                         ),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MetricType.Small,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
                 }
@@ -787,7 +809,7 @@ private fun InfoRow(label: String, value: String) {
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
+            style = MetricType.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -795,7 +817,52 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
+/**
+ * Curvas de nivel dibujadas con Canvas: dan contexto de mapa topográfico
+ * mientras el Bloque 4 integra el mapa real, sin añadir dependencias ni assets.
+ */
+@Composable
+private fun TopographicContours(
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val center = Offset(size.width * CONTOUR_CENTER_X, size.height * CONTOUR_CENTER_Y)
+        val shortestSide = minOf(size.width, size.height)
+        val stroke = Stroke(width = CONTOUR_STROKE.toPx(), cap = StrokeCap.Round)
+        repeat(CONTOUR_COUNT) { index ->
+            val radius = shortestSide * (CONTOUR_BASE_RADIUS + index * CONTOUR_STEP)
+            if (radius <= 0f) return@repeat
+            val path = Path()
+            for (step in 0..CONTOUR_SEGMENTS) {
+                val angle = step.toFloat() / CONTOUR_SEGMENTS * TWO_PI
+                val wobble = 1f +
+                    CONTOUR_WOBBLE * sin(angle * 3f + index * 0.8f) +
+                    CONTOUR_WOBBLE_DETAIL * cos(angle * 5f - index * 0.6f)
+                val x = center.x + cos(angle) * radius * CONTOUR_ASPECT * wobble
+                val y = center.y + sin(angle) * radius * wobble
+                if (step == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            path.close()
+            drawPath(path = path, color = color, style = stroke)
+        }
+    }
+}
+
 private val MAP_PANEL_HEIGHT = 220.dp
 
 private const val LABEL_ALPHA = 0.72f
 private const val ALERT_TAG_ALPHA = 0.14f
+
+private const val CONTOUR_ALPHA = 0.16f
+private const val CONTOUR_CENTER_X = 0.5f
+private const val CONTOUR_CENTER_Y = 0.54f
+private const val CONTOUR_BASE_RADIUS = 0.12f
+private const val CONTOUR_STEP = 0.09f
+private const val CONTOUR_ASPECT = 1.5f
+private const val CONTOUR_WOBBLE = 0.12f
+private const val CONTOUR_WOBBLE_DETAIL = 0.05f
+private const val CONTOUR_SEGMENTS = 96
+private const val CONTOUR_COUNT = 7
+private val CONTOUR_STROKE = 1.dp
+private val TWO_PI = (2 * PI).toFloat()

@@ -2,6 +2,7 @@ package com.panamatrip.app.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,13 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.MetricType
 
 data class MetricItem(
     val label: String,
     val value: String,
+    /** Las métricas numéricas usan cifras tabulares para no bailar al actualizarse. */
+    val numeric: Boolean = false,
 )
 
 /**
@@ -36,19 +41,24 @@ fun MetricCapsule(
         shape = RoundedCornerShape(Dimens.innerCorner),
         contentColor = Color.White,
     ) {
-        Row(
+        FlowRow(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             items.forEachIndexed { index, item ->
-                MetricCell(item)
-                if (index != items.lastIndex) {
-                    Text(
-                        text = "·",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White.copy(alpha = 0.6f),
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (index != 0) {
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White.copy(alpha = 0.6f),
+                        )
+                    }
+                    MetricCell(item)
                 }
             }
         }
@@ -67,9 +77,14 @@ private fun MetricCell(item: MetricItem) {
         )
         Text(
             text = item.value,
-            style = MaterialTheme.typography.labelMedium,
+            style = if (item.numeric) {
+                MetricType.Small
+            } else {
+                MaterialTheme.typography.labelMedium
+            },
             color = Color.White,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -80,6 +95,7 @@ fun TonalTag(
     text: String,
     modifier: Modifier = Modifier,
     tone: Tone = Tone.Primary,
+    style: TextStyle = MaterialTheme.typography.labelSmall,
 ) {
     Surface(
         modifier = modifier,
@@ -90,7 +106,7 @@ fun TonalTag(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelSmall,
+            style = style,
             maxLines = 1,
         )
     }

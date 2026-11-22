@@ -34,9 +34,12 @@ import com.panamatrip.app.domain.track.TrackRecorderEngine
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -60,6 +63,7 @@ class LocationTrackingService : Service() {
 
     private var engine: TrackRecorderEngine? = null
     private var locationCallback: LocationCallback? = null
+    private var tickerJob: Job? = null
     private var startedAtEpochMillis = 0L
     private var destinationId: String? = null
     private var destinationName: String? = null
@@ -87,6 +91,7 @@ class LocationTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        stopTicker()
         stopLocationUpdates()
         serviceScope.cancel()
         if (_session.value is RecorderSession.Active) {
@@ -133,21 +138,29 @@ class LocationTrackingService : Service() {
             destinationName = destinationName,
         )
         requestLocationUpdates()
+        startTicker()
     }
 
     private fun pauseRecording() {
         val engine = engine ?: return stopSelf()
-        if (engine.pause(SystemClock.elapsedRealtime())) publishSnapshot()
+        if (engine.pause(SystemClock.elapsedRealtime())) {
+            publishSnapshot()
+            stopTicker()
+        }
     }
 
     private fun resumeRecording() {
         val engine = engine ?: return stopSelf()
-        if (engine.resume(SystemClock.elapsedRealtime())) publishSnapshot()
+        if (engine.resume(SystemClock.elapsedRealtime())) {
+            publishSnapshot()
+            startTicker()
+        }
     }
 
     private fun finishRecording() {
         val activeEngine = engine ?: return stopSelf()
         engine = null
+        stopTicker()
         stopLocationUpdates()
         val now = SystemClock.elapsedRealtime()
         val track = activeEngine.finish(
@@ -165,6 +178,7 @@ class LocationTrackingService : Service() {
 
     private fun discardRecording() {
         engine = null
+        stopTicker()
         stopLocationUpdates()
         _session.value = RecorderSession.Idle
         _events.tryEmit(RecorderEvent.DISCARDED)
@@ -173,10 +187,10 @@ class LocationTrackingService : Service() {
     }
 
     private fun publishSnapshot() {
-        val snapshot = snapshot()
         val activeEngine = engine ?: return
+        val snapshot = activeEngine.snapshot(SystemClock.elapsedRealtime())
         _session.value = RecorderSession.Active(
-            status = activeEngine.snapshot(SystemClock.elapsedRealtime()).status,
+            status = snapshot.status,
             snapshot = snapshot,
             startedAtEpochMillis = startedAtEpochMillis,
             destinationId = destinationId,
@@ -187,6 +201,30 @@ class LocationTrackingService : Service() {
 
     private fun snapshot(): TrackSnapshot =
         engine?.snapshot(SystemClock.elapsedRealtime()) ?: EMPTY_SNAPSHOT
+
+    /**
+     * Ticker independiente de las muestras GPS: mantiene el cronómetro y la
+     * notificación avanzando cada segundo aunque el usuario esté detenido y no
+     * lleguen coordenadas nuevas.
+     */
+    private fun startTicker() {
+        if (tickerJob?.isActive == true) return
+        tickerJob = serviceScope.launch {
+            while (isActive) {
+                delay(TICK_INTERVAL_MILLIS)
+                val activeEngine = engine ?: break
+                if (activeEngine.snapshot(SystemClock.elapsedRealtime()).status != RecorderStatus.RECORDING) {
+                    break
+                }
+                publishSnapshot()
+            }
+        }
+    }
+
+    private fun stopTicker() {
+        tickerJob?.cancel()
+        tickerJob = null
+    }
 
     @Suppress("MissingPermission")
     private fun requestLocationUpdates() {
@@ -352,6 +390,7 @@ class LocationTrackingService : Service() {
         private const val REQUEST_OPEN_APP = 3002
         private const val SAMPLE_INTERVAL_MILLIS = 3_000L
         private const val MIN_UPDATE_DISTANCE_METERS = 4f
+        private const val TICK_INTERVAL_MILLIS = 1_000L
         private const val METERS_PER_KILOMETER = 1_000
 
         private val EMPTY_SNAPSHOT = TrackSnapshot(
