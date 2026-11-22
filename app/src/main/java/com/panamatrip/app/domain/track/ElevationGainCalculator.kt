@@ -1,6 +1,7 @@
 package com.panamatrip.app.domain.track
 
 import com.panamatrip.app.domain.model.TrackPoint
+import kotlin.jvm.JvmName
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -41,6 +42,7 @@ object ElevationGainCalculator {
         return gain.roundToInt()
     }
 
+    @JvmName("gainMetersForPoints")
     fun gainMeters(
         points: List<TrackPoint>,
         noiseThresholdMeters: Double = DEFAULT_NOISE_THRESHOLD_METERS,

@@ -4,7 +4,7 @@
 
 **Panama-Trip** es una aplicación nativa para Android diseñada con una estética minimalista bajo **Material 3**. No es solo un catálogo de ríos, cascadas, lagos y montañas; es un copiloto de ruta que calcula tus gastos reales de viaje, anticipa el clima de la jornada y te alerta sobre detalles críticos en la vía antes de que enciendas el motor.
 
-**Estado actual:** 🚧 **Bloque 2 (v0.2) completado** — catálogo de destinos, motor logístico offline y directorio de guías locales ya funcionales.
+**Estado actual:** ✅ **Bloque 3 (v0.3.0-alpha) completado** — grabador GPS en segundo plano y publicación comunitaria con verificación de coordenadas EXIF ya funcionales. El mapa interactivo con MapLibre y OpenStreetMap llega en **v0.4.0-alpha**.
 
 ---
 
@@ -15,7 +15,8 @@
 * ⛽ **Calculadora de Combustible:** Estimación de consumo según la distancia del trayecto y recomendaciones de estaciones de combustible en la vía.
 * 🍽️ **Paradas Gastronómicas Inteligentes:** Sugerencias de restaurantes en la ruta filtradas según tu horario (desayuno, almuerzo o cena) si contemplas detenerte a comer.
 * 💵 **Presupuesto y Alertas de Peaje:** Cálculo total de gastos operativos (combustible + peajes) con notificaciones preventivas sobre métodos de pago (ej. aviso de peajes *solo en efectivo* como en la autopista hacia Colón).
-* 📸 **Comunidad y Reseñas Verificadas:** Sistema de calificación, comentarios y galería de fotos subidas por senderistas que ya completaron el recorrido.
+* 🥾 **Grabador GPS de Expedición:** Registro opcional de la caminata con `ForegroundService`, 100 % offline por satélite, que mide distancia, tiempo activo, velocidad media y desnivel acumulado.
+* 📸 **Comunidad y Reseñas Verificadas:** Sistema de calificación, comentarios y galería de fotos subidas por senderistas que ya completaron el recorrido, con validación de presencia física mediante coordenadas EXIF.
 * 🧭 **Directorio de Guías Locales:** Espacio dedicado para guías certificados que deseen promocionar sus servicios dentro de la plataforma mediante un esquema de pago único.
 
 ---
@@ -68,10 +69,36 @@ Todo el cálculo corre en Kotlin puro sobre una semilla local, por lo que el pla
 
 ---
 
-## 🔜 Próximos pasos — Bloque 3 (v0.3)
+## ✅ Bloque 3 (v0.3.0-alpha) — Completado
 
-- [ ] **Tracking GPS voluntario:** registro de la caminata con `ForegroundService`, 100 % offline por satélite, midiendo tiempo, distancia y desnivel.
-- [ ] **Verificación con GPS + EXIF:** doble llave de presencia física (lectura GPS en sitio o metadatos EXIF de la foto original del Photo Picker) para habilitar publicaciones y reseñas.
+### 🥾 Grabador de rutas GPS en segundo plano
+
+- **ForegroundService dedicado** (`LocationTrackingService`) con `FusedLocationProviderClient`: la grabación continúa al salir de la app y funciona 100 % offline por satélite.
+- Métricas en tiempo real: **distancia recorrida**, **tiempo activo** (sin pausas), **velocidad media** y **desnivel acumulado** con filtro de ruido GPS.
+- Controles de **iniciar, pausar, reanudar, guardar y descartar**, con notificación persistente y acciones rápidas.
+- Cada recorrido se guarda como **trofeo** en Room (`tracks` y `track_points`) y queda disponible en el historial del grabador, accesible desde **Mi Ruta**.
+- Cálculos puros en JVM (`ElevationGainCalculator`, `TrackMetricsCalculator`), con pruebas unitarias sobre el cálculo de desnivel.
+
+### 📸 Comunidad con verificación de coordenadas EXIF
+
+- Publicación de fotos y experiencias desde **Explorar → Comunidad** usando el **Android Photo Picker** (`PickVisualMedia`), sin permisos de almacenamiento.
+- Lectura de metadatos EXIF de la foto original: `TAG_GPS_LATITUDE`, `TAG_GPS_LONGITUDE` y `TAG_DATETIME_ORIGINAL`.
+- `ExifLocationVerifier` valida que la foto haya sido capturada a **menos de 5 km** del atractivo y muestra la insignia **«Foto verificada en sitio»**; sin metadatos, la publicación sigue disponible sin verificación.
+- Compresión local a **máximo 1600 px y JPEG 80 %** en `filesDir/pending_uploads`, con carga de URIs `file://` mediante Coil.
+- La base local sube a **Room v3** con las nuevas entidades de tracks y los campos de verificación EXIF en las publicaciones.
+
+---
+
+## 🔜 Próximos pasos — Bloque 4 (v0.4.0-alpha)
+
+### 🗺️ Mapa interactivo con MapLibre y OpenStreetMap
+
+- [ ] Integrar **MapLibre Native** sobre teselas de **OpenStreetMap** para explorar destinos, estacionamientos y atractivos en un mapa real.
+- [ ] Mostrar pines por destino con su ficha, filtros por ecosistema/vehículo y distancia desde la ubicación actual.
+- [ ] Superponer los **trazados GPS grabados** para orientar a futuros visitantes entre el estacionamiento y el atractivo.
+- [ ] Preparar caché de teselas para consulta offline en senderos sin cobertura.
+
+### 🧱 Backlog técnico
+
 - [ ] **Sincronización diferida con WorkManager:** cola local para rutas, reseñas y fotos capturadas sin señal, con subida automática al recuperar conexión.
-- [ ] **Compresión offline de galería:** redimensión local a `1600 px` y WebP/JPEG 80 % en `filesDir/pending_uploads`.
 - [ ] **Tarjeta de visita detectada:** banner sutil cuando exista una visita reciente sin reseñar (ventana de 14 días).

@@ -43,7 +43,7 @@ class ElevationGainCalculatorTest {
 
     @Test
     fun `empty and single point inputs yield zero`() {
-        assertEquals(0, ElevationGainCalculator.gainMeters(emptyList()))
+        assertEquals(0, ElevationGainCalculator.gainMeters(emptyList<Double?>()))
         assertEquals(0, ElevationGainCalculator.gainMeters(listOf(340.0)))
     }
 

@@ -3,6 +3,7 @@ package com.panamatrip.app.features.trackrecorder.ui
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -105,10 +106,13 @@ fun TrackRecorderRoute(
                 viewModel.start()
             } else {
                 permissionLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                    ),
+                    buildList {
+                        add(Manifest.permission.ACCESS_FINE_LOCATION)
+                        add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }.toTypedArray(),
                 )
             }
         },

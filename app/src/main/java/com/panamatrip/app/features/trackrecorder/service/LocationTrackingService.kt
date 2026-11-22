@@ -98,7 +98,9 @@ class LocationTrackingService : Service() {
     private fun startRecording(intent: Intent) {
         if (engine != null) return
         if (!hasLocationPermission()) {
-            startForeground(NOTIFICATION_ID, buildNotification(EMPTY_SNAPSHOT))
+            // startForeground con tipo location lanza SecurityException sin el
+            // permiso runtime; el servicio debe cerrarse sin tumbar el proceso.
+            runCatching { startForegroundCompat(EMPTY_SNAPSHOT) }
             _events.tryEmit(RecorderEvent.PERMISSION_DENIED)
             stopForegroundCompat()
             stopSelf()
@@ -117,7 +119,12 @@ class LocationTrackingService : Service() {
         )
 
         val snapshot = snapshot()
-        startForegroundCompat(snapshot)
+        if (runCatching { startForegroundCompat(snapshot) }.isFailure) {
+            engine = null
+            _events.tryEmit(RecorderEvent.FAILED)
+            stopSelf()
+            return
+        }
         _session.value = RecorderSession.Active(
             status = snapshot.status,
             snapshot = snapshot,
