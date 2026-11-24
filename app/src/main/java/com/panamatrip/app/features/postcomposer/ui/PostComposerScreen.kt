@@ -1,5 +1,8 @@
 package com.panamatrip.app.features.postcomposer.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,9 +38,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panamatrip.app.R
@@ -85,10 +90,34 @@ fun PostComposerRoute(
         }
     }
 
+    val context = LocalContext.current
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         uri?.let(viewModel::selectPhoto)
+    }
+    // ACCESS_MEDIA_LOCATION es permiso runtime: sin él MediaStore entrega la copia
+    // redactada y el EXIF GPS desaparece. Si se niega, el picker sigue funcionando.
+    val mediaLocationPermission = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) {
+        photoPicker.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+        )
+    }
+    val openPicker = {
+        val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_MEDIA_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED
+        if (needsPermission) {
+            mediaLocationPermission.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
+        } else {
+            photoPicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        }
     }
 
     PostComposerScreen(
@@ -97,11 +126,7 @@ fun PostComposerRoute(
         onBack = onBack,
         onRetry = viewModel::retry,
         onSelectDestination = viewModel::selectDestination,
-        onPickPhoto = {
-            photoPicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-            )
-        },
+        onPickPhoto = openPicker,
         onCaptionChange = viewModel::updateCaption,
         onPublish = viewModel::publish,
     )
@@ -242,6 +267,7 @@ private fun ComposerContent(
         item(key = "photo") {
             PhotoPickerCard(
                 photo = content.photo,
+                enabled = !content.isBusy,
                 onPickPhoto = onPickPhoto,
             )
         }
@@ -306,6 +332,7 @@ private fun DestinationChips(
 @Composable
 private fun PhotoPickerCard(
     photo: SelectedPhotoUi?,
+    enabled: Boolean,
     onPickPhoto: () -> Unit,
 ) {
     Surface(
@@ -367,6 +394,7 @@ private fun PhotoPickerCard(
                         },
                     ),
                     onClick = onPickPhoto,
+                    enabled = enabled,
                     icon = PanamaIcons.Camera,
                 )
             }

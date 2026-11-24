@@ -25,6 +25,7 @@ import com.panamatrip.app.domain.model.RecordedTrack
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.model.TrackPoint
+import com.panamatrip.app.domain.model.TrackStatus
 import com.panamatrip.app.domain.model.VehicleAccessSummary
 import com.panamatrip.app.domain.model.VehicleType
 import com.panamatrip.app.domain.ranking.RatingCalculator
@@ -184,7 +185,12 @@ fun TrackEntity.toDomain(): RecordedTrack = RecordedTrack(
     averageSpeedKmh = averageSpeedKmh,
     elevationGainMeters = elevationGainMeters,
     pointCount = pointCount,
+    status = enumOrDefault(status, TrackStatus.COMPLETED),
 )
+
+/** Arma el recorrido completo: cabecera de [TrackEntity] más sus puntos ordenados. */
+fun TrackEntity.toDomain(points: List<TrackPointEntity>): RecordedTrack =
+    toDomain().copy(points = points.map { point -> point.toDomain() })
 
 fun RecordedTrack.toEntity(): TrackEntity = TrackEntity(
     id = id,
@@ -197,6 +203,7 @@ fun RecordedTrack.toEntity(): TrackEntity = TrackEntity(
     averageSpeedKmh = averageSpeedKmh,
     elevationGainMeters = elevationGainMeters,
     pointCount = pointCount,
+    status = status.name,
 )
 
 fun TrackPoint.toEntity(trackId: String, sequence: Int): TrackPointEntity = TrackPointEntity(
@@ -208,6 +215,7 @@ fun TrackPoint.toEntity(trackId: String, sequence: Int): TrackPointEntity = Trac
     accuracyMeters = accuracyMeters,
     recordedAt = recordedAtEpochMillis,
     activeElapsedMillis = activeElapsedMillis,
+    segmentIndex = segmentIndex,
 )
 
 fun TrackPointEntity.toDomain(): TrackPoint = TrackPoint(
@@ -216,6 +224,7 @@ fun TrackPointEntity.toDomain(): TrackPoint = TrackPoint(
     accuracyMeters = accuracyMeters,
     recordedAtEpochMillis = recordedAt,
     activeElapsedMillis = activeElapsedMillis,
+    segmentIndex = segmentIndex,
 )
 
 /** Completa los tres vehículos para que la UI nunca tenga huecos. */

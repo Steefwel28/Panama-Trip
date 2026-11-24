@@ -11,6 +11,8 @@ import com.panamatrip.app.core.ui.UiError
 import com.panamatrip.app.core.ui.UiNotice
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.RecordedTrack
+import com.panamatrip.app.domain.model.TrackProgress
+import com.panamatrip.app.domain.model.TrackStatus
 import com.panamatrip.app.domain.repository.DestinationRepository
 import com.panamatrip.app.domain.repository.TrackRepository
 import com.panamatrip.app.features.trackrecorder.data.TrackRecorderController
@@ -43,6 +45,7 @@ class TrackRecorderViewModel(
     private val destinationId: String? =
         savedStateHandle.get<String>(ARG_DESTINATION_ID)?.takeIf { it.isNotBlank() }
     private val retryTrigger = MutableStateFlow(0)
+    private val resumableTrack = MutableStateFlow<RecordedTrack?>(null)
 
     private val noticeChannel = MutableSharedFlow<UiNotice>(
         extraBufferCapacity = NOTICE_BUFFER,
@@ -51,13 +54,17 @@ class TrackRecorderViewModel(
     val notices: SharedFlow<UiNotice> = noticeChannel.asSharedFlow()
 
     val state: StateFlow<TrackRecorderUiState> = retryTrigger.flatMapLatest {
-        combine<List<RecordedTrack>, RecorderSession, TrackRecorderUiState>(
+        combine<List<RecordedTrack>, RecorderSession, RecordedTrack?, TrackRecorderUiState>(
             trackRepository.observeTracks(),
             controller.session,
-        ) { tracks, session ->
+            resumableTrack,
+        ) { tracks, session, resumable ->
             TrackRecorderUiState.Content(
                 active = session.toActiveUi(),
-                history = tracks.map { track -> track.toUi() },
+                history = tracks
+                    .filter { track -> track.status == TrackStatus.COMPLETED }
+                    .map { track -> track.toUi() },
+                resumable = resumable?.toUi(),
             )
         }.catch { emit(TrackRecorderUiState.Error(UiError.DATABASE)) }
     }.stateIn(
@@ -67,6 +74,11 @@ class TrackRecorderViewModel(
     )
 
     init {
+        // Al abrir la pantalla se buscan tracks huérfanos antes que otra cosa.
+        viewModelScope.launch {
+            resumableTrack.value = runCatching { trackRepository.findResumable().firstOrNull() }
+                .getOrNull()
+        }
         viewModelScope.launch {
             controller.events.collect { event ->
                 when (event) {
@@ -98,6 +110,46 @@ class TrackRecorderViewModel(
     fun finish() = controller.finish()
 
     fun discard() = controller.discard()
+
+    /** Cierra un track huérfano con las métricas que alcanzaron a persistirse. */
+    fun keepRecovered() {
+        val track = resumableTrack.value ?: return
+        viewModelScope.launch {
+            val result = runCatching {
+                trackRepository.updateProgress(
+                    trackId = track.id,
+                    progress = TrackProgress(
+                        status = TrackStatus.COMPLETED,
+                        distanceMeters = track.distanceMeters,
+                        activeDurationMillis = track.activeDurationMillis,
+                        averageSpeedKmh = track.averageSpeedKmh,
+                        elevationGainMeters = track.elevationGainMeters,
+                        pointCount = track.pointCount,
+                        finishedAtEpochMillis = System.currentTimeMillis(),
+                    ),
+                )
+            }
+            if (result.isSuccess) {
+                resumableTrack.value = null
+                noticeChannel.tryEmit(UiNotice.TRACK_SAVED)
+            } else {
+                noticeChannel.tryEmit(UiNotice.ACTION_FAILED)
+            }
+        }
+    }
+
+    fun discardRecovered() {
+        val track = resumableTrack.value ?: return
+        viewModelScope.launch {
+            val result = runCatching { trackRepository.discard(track.id) }
+            if (result.isSuccess) {
+                resumableTrack.value = null
+                noticeChannel.tryEmit(UiNotice.TRACK_DISCARDED)
+            } else {
+                noticeChannel.tryEmit(UiNotice.ACTION_FAILED)
+            }
+        }
+    }
 
     fun retry() {
         retryTrigger.update { it + 1 }

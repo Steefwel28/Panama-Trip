@@ -294,6 +294,10 @@
     <string name="recorder_stat_speed">Vel. media</string>
     <string name="recorder_stat_elevation">Desnivel +</string>
     <string name="recorder_history_meta">%1$s · %2$s</string>
+    <string name="recorder_recover_title">Recorrido interrumpido</string>
+    <string name="recorder_recover_body">La app se cerró a mitad de la grabación. Conservamos los puntos GPS guardados: puedes añadirlos a tu historial o descartarlos.</string>
+    <string name="recorder_recover_save">Guardar recorrido</string>
+    <string name="recorder_recover_discard">Descartar</string>
 
     <!-- Notificación del servicio de rastreo -->
     <string name="track_notification_channel">Grabación de ruta</string>

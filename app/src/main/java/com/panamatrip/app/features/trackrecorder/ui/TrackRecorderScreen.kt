@@ -121,6 +121,8 @@ fun TrackRecorderRoute(
         onResume = viewModel::resume,
         onFinish = viewModel::finish,
         onDiscard = viewModel::discard,
+        onKeepRecovered = viewModel::keepRecovered,
+        onDiscardRecovered = viewModel::discardRecovered,
         onRetry = viewModel::retry,
     )
 }
@@ -136,6 +138,8 @@ fun TrackRecorderScreen(
     onResume: () -> Unit,
     onFinish: () -> Unit,
     onDiscard: () -> Unit,
+    onKeepRecovered: () -> Unit = {},
+    onDiscardRecovered: () -> Unit = {},
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -166,6 +170,8 @@ fun TrackRecorderScreen(
                     onResume = onResume,
                     onFinish = onFinish,
                     onDiscard = { showDiscardDialog = true },
+                    onKeepRecovered = onKeepRecovered,
+                    onDiscardRecovered = onDiscardRecovered,
                 )
             }
         }
@@ -260,8 +266,11 @@ private fun TrackRecorderContent(
     onResume: () -> Unit,
     onFinish: () -> Unit,
     onDiscard: () -> Unit,
+    onKeepRecovered: () -> Unit,
+    onDiscardRecovered: () -> Unit,
 ) {
     val active = content.active
+    val resumable = content.resumable
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -275,6 +284,16 @@ private fun TrackRecorderContent(
         if (permissionDenied) {
             item(key = "permission") {
                 InfoNotice(text = stringResource(R.string.recorder_permission_needed))
+            }
+        }
+
+        if (resumable != null && active == null) {
+            item(key = "recover") {
+                ResumeTrackCard(
+                    track = resumable,
+                    onKeep = onKeepRecovered,
+                    onDiscard = onDiscardRecovered,
+                )
             }
         }
 
@@ -319,6 +338,63 @@ private fun TrackRecorderContent(
         } else {
             items(items = content.history, key = { it.id }) { track ->
                 RecordedTrackRow(track = track)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResumeTrackCard(
+    track: RecordedTrackUi,
+    onKeep: () -> Unit,
+    onDiscard: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.tonalElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.itemGap),
+        ) {
+            Text(
+                text = stringResource(R.string.recorder_recover_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.recorder_recover_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(
+                    R.string.recorder_history_meta,
+                    distanceLabel(track.distanceMeters),
+                    durationLabel(track.activeDurationMillis),
+                ),
+                style = MetricType.Small,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+            Text(
+                text = trackTimestampLabel(track.startedAtEpochMillis),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
+                PrimaryActionButton(
+                    text = stringResource(R.string.recorder_recover_save),
+                    onClick = onKeep,
+                    icon = PanamaIcons.Check,
+                    modifier = Modifier.weight(1f),
+                )
+                SecondaryActionButton(
+                    text = stringResource(R.string.recorder_recover_discard),
+                    onClick = onDiscard,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

@@ -84,6 +84,10 @@ interface PostDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertLike(like: PostLikeEntity)
 
+    /** Inserta o reemplaza el like: repetir la misma operación no altera el estado. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertLike(like: PostLikeEntity)
+
     @Query("SELECT COUNT(*) FROM post_likes WHERE postId = :postId")
     suspend fun isLiked(postId: String): Int
 
@@ -187,11 +191,44 @@ interface TrackDao {
     @Query("SELECT * FROM track_points WHERE trackId = :trackId ORDER BY sequence ASC")
     fun observePoints(trackId: String): Flow<List<TrackPointEntity>>
 
+    @Query("SELECT * FROM track_points WHERE trackId = :trackId ORDER BY sequence ASC")
+    suspend fun getPoints(trackId: String): List<TrackPointEntity>
+
+    @Query("SELECT COUNT(*) FROM track_points WHERE trackId = :trackId")
+    suspend fun countPoints(trackId: String): Int
+
+    /** Tracks que quedaron a medias y se pueden retomar al reabrir la app. */
+    @Query("SELECT * FROM tracks WHERE status IN ('IN_PROGRESS','PAUSED') ORDER BY startedAt DESC")
+    suspend fun findResumable(): List<TrackEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTrack(track: TrackEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPoints(points: List<TrackPointEntity>)
+
+    @Query(
+        "UPDATE tracks SET status = :status, finishedAt = :finishedAt, " +
+            "distanceMeters = :distanceMeters, activeDurationMillis = :activeDurationMillis, " +
+            "averageSpeedKmh = :averageSpeedKmh, elevationGainMeters = :elevationGainMeters, " +
+            "pointCount = :pointCount WHERE id = :trackId",
+    )
+    suspend fun updateProgress(
+        trackId: String,
+        status: String,
+        finishedAt: Long,
+        distanceMeters: Int,
+        activeDurationMillis: Long,
+        averageSpeedKmh: Double,
+        elevationGainMeters: Int,
+        pointCount: Int,
+    )
+
+    @Query("DELETE FROM track_points WHERE trackId = :trackId")
+    suspend fun deletePoints(trackId: String)
+
+    @Query("DELETE FROM tracks WHERE id = :trackId")
+    suspend fun deleteTrack(trackId: String)
 
     @Query("SELECT COUNT(*) FROM tracks")
     suspend fun count(): Int

@@ -6,6 +6,17 @@ enum class RecorderStatus {
     PAUSED,
 }
 
+/**
+ * Estado persistido de un recorrido. Se distingue de [RecorderStatus] porque
+ * aquí interesa saber si el track quedó huérfano y se puede retomar.
+ */
+enum class TrackStatus {
+    IN_PROGRESS,
+    PAUSED,
+    COMPLETED,
+    DISCARDED,
+}
+
 /** Muestra GPS cruda que entra al motor de grabación. */
 data class TrackSample(
     val point: GeoPoint,
@@ -21,6 +32,8 @@ data class TrackPoint(
     val accuracyMeters: Float?,
     val recordedAtEpochMillis: Long,
     val activeElapsedMillis: Long,
+    /** Tramo del recorrido: cada reanudación tras una pausa abre un segmento nuevo. */
+    val segmentIndex: Int = 0,
 )
 
 /** Métricas instantáneas que alimentan la pantalla durante la grabación. */
@@ -46,4 +59,16 @@ data class RecordedTrack(
     val elevationGainMeters: Int,
     val pointCount: Int,
     val points: List<TrackPoint> = emptyList(),
+    val status: TrackStatus = TrackStatus.COMPLETED,
+)
+
+/** Progreso que se persiste por lote mientras el GPS sigue capturando. */
+data class TrackProgress(
+    val status: TrackStatus,
+    val distanceMeters: Int,
+    val activeDurationMillis: Long,
+    val averageSpeedKmh: Double,
+    val elevationGainMeters: Int,
+    val pointCount: Int,
+    val finishedAtEpochMillis: Long,
 )

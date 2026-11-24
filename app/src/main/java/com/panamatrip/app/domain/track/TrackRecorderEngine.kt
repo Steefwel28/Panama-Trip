@@ -26,16 +26,24 @@ class TrackRecorderEngine(
     private var status = RecorderStatus.RECORDING
     private var pausedAtElapsedMillis: Long? = null
     private var accumulatedPauseMillis = 0L
+    private var currentSegmentIndex = 0
 
     fun addSample(sample: TrackSample, nowElapsedMillis: Long): Boolean {
         if (status != RecorderStatus.RECORDING) return false
         val accuracy = sample.accuracyMeters
         if (accuracy != null && accuracy > maxAccuracyMeters) return false
 
-        val previous = points.lastOrNull()
+        // Solo se compara contra el último punto del segmento activo: el salto
+        // entre pausa y reanudación no es un desplazamiento real.
+        val previous = points.lastOrNull()?.takeIf { it.segmentIndex == currentSegmentIndex }
         if (previous != null) {
             val step = GeoCalculator.distanceMeters(previous.point, sample.point)
-            if (step < minDistanceBetweenPointsMeters) return false
+            val minStep = maxOf(
+                minDistanceBetweenPointsMeters.toFloat(),
+                (accuracy ?: 0f) / 2f,
+                MIN_STEP_METERS,
+            )
+            if (step < minStep) return false
         }
 
         points += TrackPoint(
@@ -44,6 +52,7 @@ class TrackRecorderEngine(
             accuracyMeters = sample.accuracyMeters,
             recordedAtEpochMillis = sample.capturedAtEpochMillis,
             activeElapsedMillis = activeElapsedMillis(nowElapsedMillis),
+            segmentIndex = currentSegmentIndex,
         )
         return true
     }
@@ -60,6 +69,7 @@ class TrackRecorderEngine(
         accumulatedPauseMillis += (nowElapsedMillis - pausedAt).coerceAtLeast(0L)
         pausedAtElapsedMillis = null
         status = RecorderStatus.RECORDING
+        currentSegmentIndex += 1
         return true
     }
 
@@ -95,6 +105,9 @@ class TrackRecorderEngine(
 
     fun recordedPoints(): List<TrackPoint> = points.toList()
 
+    /** Último punto aceptado; evita copiar toda la ruta al persistir un lote. */
+    fun lastRecordedPoint(): TrackPoint? = points.lastOrNull()
+
     private fun activeElapsedMillis(nowElapsedMillis: Long): Long {
         val pausedFor = pausedAtElapsedMillis
             ?.let { pausedAt -> (nowElapsedMillis - pausedAt).coerceAtLeast(0L) }
@@ -106,5 +119,8 @@ class TrackRecorderEngine(
     companion object {
         const val DEFAULT_MAX_ACCURACY_METERS = 50f
         const val DEFAULT_MIN_POINT_DISTANCE_METERS = 2
+
+        /** Paso mínimo absoluto: por debajo de 5 m la deriva GPS domina la señal. */
+        const val MIN_STEP_METERS = 5f
     }
 }

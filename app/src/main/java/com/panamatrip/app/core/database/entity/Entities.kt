@@ -1,5 +1,6 @@
 package com.panamatrip.app.core.database.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -169,6 +170,8 @@ data class TrackEntity(
     val averageSpeedKmh: Double,
     val elevationGainMeters: Int,
     val pointCount: Int,
+    @ColumnInfo(defaultValue = "'COMPLETED'")
+    val status: String = "COMPLETED",
 )
 
 @Entity(
@@ -185,4 +188,6 @@ data class TrackPointEntity(
     val accuracyMeters: Float?,
     val recordedAt: Long,
     val activeElapsedMillis: Long,
+    @ColumnInfo(defaultValue = "0")
+    val segmentIndex: Int = 0,
 )

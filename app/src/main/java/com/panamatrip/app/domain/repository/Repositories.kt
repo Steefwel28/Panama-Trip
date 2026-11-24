@@ -11,6 +11,7 @@ import com.panamatrip.app.domain.model.LocalGuide
 import com.panamatrip.app.domain.model.NewCommunityPost
 import com.panamatrip.app.domain.model.RecordedTrack
 import com.panamatrip.app.domain.model.TrackPoint
+import com.panamatrip.app.domain.model.TrackProgress
 import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.affinity.AffinitySnapshot
 import com.panamatrip.app.core.datastore.UserPreferences
@@ -65,5 +66,21 @@ interface RoutePlanRepository {
 interface TrackRepository {
     fun observeTracks(): Flow<List<RecordedTrack>>
     fun observeTrackPoints(trackId: String): Flow<List<TrackPoint>>
+
+    /** Atómico: cabecera (upsert) + todos sus puntos. */
     suspend fun save(track: RecordedTrack)
+
+    /** Inserta la cabecera como IN_PROGRESS para poder retomarla si la app muere. */
+    suspend fun startTrack(track: RecordedTrack)
+
+    /** Atómico: agrega puntos al lote ya guardado y actualiza el progreso. */
+    suspend fun persistBatch(trackId: String, points: List<TrackPoint>, progress: TrackProgress)
+
+    suspend fun updateProgress(trackId: String, progress: TrackProgress)
+
+    /** Tracks IN_PROGRESS/PAUSED con sus puntos, para ofrecer recuperación. */
+    suspend fun findResumable(): List<RecordedTrack>
+
+    /** Atómico: borra puntos y cabecera. */
+    suspend fun discard(trackId: String)
 }

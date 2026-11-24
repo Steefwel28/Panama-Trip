@@ -1,5 +1,7 @@
 package com.panamatrip.app.data.repository
 
+import androidx.room.withTransaction
+import com.panamatrip.app.core.database.PanamaTripDatabase
 import com.panamatrip.app.core.database.dao.CollectionDao
 import com.panamatrip.app.core.database.dao.PostDao
 import com.panamatrip.app.core.database.entity.CollectionEntity
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 class CollectionRepositoryImpl(
+    private val database: PanamaTripDatabase,
     private val collectionDao: CollectionDao,
     private val postDao: PostDao,
     private val clock: () -> Long = System::currentTimeMillis,
@@ -44,12 +47,20 @@ class CollectionRepositoryImpl(
         collectionDao.observeSavedPostIds().map { ids -> ids.toSet() }
 
     override suspend fun togglePostInCollection(collectionId: String, postId: String) {
-        if (collectionDao.hasEntry(collectionId, postId) > 0) {
-            collectionDao.deleteEntry(collectionId, postId)
-        } else {
+        database.withTransaction {
+            val saved = collectionDao.hasEntry(collectionId, postId) > 0
+            setPostInCollection(collectionId, postId, !saved)
+        }
+    }
+
+    /** Idempotente: guardar o quitar dos veces el mismo post deja el mismo estado. */
+    private suspend fun setPostInCollection(collectionId: String, postId: String, saved: Boolean) {
+        if (saved) {
             collectionDao.insertEntry(
                 CollectionPostEntity(collectionId = collectionId, postId = postId, savedAt = clock()),
             )
+        } else {
+            collectionDao.deleteEntry(collectionId, postId)
         }
     }
 

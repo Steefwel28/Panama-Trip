@@ -33,6 +33,8 @@ sealed interface TrackRecorderUiState {
     data class Content(
         val active: ActiveTrackUi?,
         val history: List<RecordedTrackUi>,
+        /** Track que quedó IN_PROGRESS tras morir el proceso y puede rescatarse. */
+        val resumable: RecordedTrackUi? = null,
     ) : TrackRecorderUiState
 
     data class Error(val error: UiError) : TrackRecorderUiState

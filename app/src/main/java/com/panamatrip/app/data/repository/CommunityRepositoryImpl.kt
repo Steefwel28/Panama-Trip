@@ -1,5 +1,7 @@
 package com.panamatrip.app.data.repository
 
+import androidx.room.withTransaction
+import com.panamatrip.app.core.database.PanamaTripDatabase
 import com.panamatrip.app.core.database.dao.CollectionDao
 import com.panamatrip.app.core.database.dao.PostDao
 import com.panamatrip.app.core.database.entity.PostLikeEntity
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 class CommunityRepositoryImpl(
+    private val database: PanamaTripDatabase,
     private val postDao: PostDao,
     private val collectionDao: CollectionDao,
     private val destinationRepository: DestinationRepository,
@@ -54,10 +57,18 @@ class CommunityRepositoryImpl(
         postDao.observeComments(postId).map { comments -> comments.map { it.toDomain() } }
 
     override suspend fun toggleLike(postId: String) {
-        if (postDao.isLiked(postId) > 0) {
-            postDao.deleteLike(postId)
+        database.withTransaction {
+            val liked = postDao.isLiked(postId) > 0
+            setLiked(postId, !liked)
+        }
+    }
+
+    /** Idempotente: aplicar dos veces el mismo valor deja el mismo estado. */
+    private suspend fun setLiked(postId: String, liked: Boolean) {
+        if (liked) {
+            postDao.upsertLike(PostLikeEntity(postId = postId, createdAt = clock()))
         } else {
-            postDao.insertLike(PostLikeEntity(postId = postId, createdAt = clock()))
+            postDao.deleteLike(postId)
         }
     }
 

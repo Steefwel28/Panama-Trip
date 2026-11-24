@@ -1,0 +1,928 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "06ba2a6847206c1f38e25a61ad4de5a7",
+    "entities": [
+      {
+        "tableName": "destinations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `province` TEXT NOT NULL, `ecosystem` TEXT NOT NULL, `summary` TEXT NOT NULL, `description` TEXT NOT NULL, `accessNotes` TEXT NOT NULL, `parkingLatitude` REAL NOT NULL, `parkingLongitude` REAL NOT NULL, `attractionLatitude` REAL NOT NULL, `attractionLongitude` REAL NOT NULL, `heroImageUrl` TEXT NOT NULL, `walkDistanceMeters` INTEGER NOT NULL, `walkMinutes` INTEGER NOT NULL, `elevationGainMeters` INTEGER NOT NULL, `recommendedVehicle` TEXT NOT NULL, `featuredOrder` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "province",
+            "columnName": "province",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecosystem",
+            "columnName": "ecosystem",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accessNotes",
+            "columnName": "accessNotes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parkingLatitude",
+            "columnName": "parkingLatitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parkingLongitude",
+            "columnName": "parkingLongitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attractionLatitude",
+            "columnName": "attractionLatitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attractionLongitude",
+            "columnName": "attractionLongitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "heroImageUrl",
+            "columnName": "heroImageUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkDistanceMeters",
+            "columnName": "walkDistanceMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkMinutes",
+            "columnName": "walkMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "elevationGainMeters",
+            "columnName": "elevationGainMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recommendedVehicle",
+            "columnName": "recommendedVehicle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "featuredOrder",
+            "columnName": "featuredOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "vehicle_reports",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `destinationId` TEXT NOT NULL, `vehicleType` TEXT NOT NULL, `verdict` TEXT NOT NULL, `authorName` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationId",
+            "columnName": "destinationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehicleType",
+            "columnName": "vehicleType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verdict",
+            "columnName": "verdict",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorName",
+            "columnName": "authorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vehicle_reports_destinationId",
+            "unique": false,
+            "columnNames": [
+              "destinationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vehicle_reports_destinationId` ON `${TABLE_NAME}` (`destinationId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "posts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `destinationId` TEXT NOT NULL, `authorName` TEXT NOT NULL, `authorRole` TEXT NOT NULL, `authorInitials` TEXT NOT NULL, `caption` TEXT NOT NULL, `imageUrl` TEXT NOT NULL, `visitedYear` INTEGER NOT NULL, `visitedMonth` INTEGER NOT NULL, `vehicleUsed` TEXT NOT NULL, `walkDistanceMeters` INTEGER NOT NULL, `walkMinutes` INTEGER NOT NULL, `activityTag` TEXT, `baseLikeCount` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `photoVerified` INTEGER NOT NULL, `exifCapturedAt` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationId",
+            "columnName": "destinationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorName",
+            "columnName": "authorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorRole",
+            "columnName": "authorRole",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorInitials",
+            "columnName": "authorInitials",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "caption",
+            "columnName": "caption",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visitedYear",
+            "columnName": "visitedYear",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visitedMonth",
+            "columnName": "visitedMonth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehicleUsed",
+            "columnName": "vehicleUsed",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkDistanceMeters",
+            "columnName": "walkDistanceMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "walkMinutes",
+            "columnName": "walkMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activityTag",
+            "columnName": "activityTag",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "baseLikeCount",
+            "columnName": "baseLikeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photoVerified",
+            "columnName": "photoVerified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exifCapturedAt",
+            "columnName": "exifCapturedAt",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_posts_destinationId",
+            "unique": false,
+            "columnNames": [
+              "destinationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_posts_destinationId` ON `${TABLE_NAME}` (`destinationId`)"
+          },
+          {
+            "name": "index_posts_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_posts_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "post_likes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`postId` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`postId`))",
+        "fields": [
+          {
+            "fieldPath": "postId",
+            "columnName": "postId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "postId"
+          ]
+        }
+      },
+      {
+        "tableName": "comments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `postId` TEXT NOT NULL, `authorName` TEXT NOT NULL, `body` TEXT NOT NULL, `terrainStatus` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postId",
+            "columnName": "postId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorName",
+            "columnName": "authorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "terrainStatus",
+            "columnName": "terrainStatus",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_comments_postId",
+            "unique": false,
+            "columnNames": [
+              "postId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_comments_postId` ON `${TABLE_NAME}` (`postId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "collections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `symbol` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "symbol",
+            "columnName": "symbol",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "collection_posts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`collectionId` TEXT NOT NULL, `postId` TEXT NOT NULL, `savedAt` INTEGER NOT NULL, PRIMARY KEY(`collectionId`, `postId`))",
+        "fields": [
+          {
+            "fieldPath": "collectionId",
+            "columnName": "collectionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postId",
+            "columnName": "postId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "savedAt",
+            "columnName": "savedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "collectionId",
+            "postId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_collection_posts_postId",
+            "unique": false,
+            "columnNames": [
+              "postId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_collection_posts_postId` ON `${TABLE_NAME}` (`postId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "reviews",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `destinationId` TEXT NOT NULL, `authorName` TEXT NOT NULL, `authorRole` TEXT NOT NULL, `rating` INTEGER NOT NULL, `body` TEXT NOT NULL, `visitLabel` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationId",
+            "columnName": "destinationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorName",
+            "columnName": "authorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorRole",
+            "columnName": "authorRole",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rating",
+            "columnName": "rating",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visitLabel",
+            "columnName": "visitLabel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reviews_destinationId",
+            "unique": false,
+            "columnNames": [
+              "destinationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reviews_destinationId` ON `${TABLE_NAME}` (`destinationId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "route_plans",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `destinationId` TEXT NOT NULL, `destinationName` TEXT NOT NULL, `fuelType` TEXT NOT NULL, `vehicleType` TEXT NOT NULL, `mountainSurcharge` INTEGER NOT NULL, `departureMinuteOfDay` INTEGER NOT NULL, `distanceMeters` INTEGER NOT NULL, `driveMinutes` INTEGER NOT NULL, `roundTripKilometers` REAL NOT NULL, `fuelLiters` REAL NOT NULL, `fuelCostCents` INTEGER NOT NULL, `tollCostCents` INTEGER NOT NULL, `cashOnlyCents` INTEGER NOT NULL, `totalCents` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationId",
+            "columnName": "destinationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationName",
+            "columnName": "destinationName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fuelType",
+            "columnName": "fuelType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehicleType",
+            "columnName": "vehicleType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mountainSurcharge",
+            "columnName": "mountainSurcharge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "departureMinuteOfDay",
+            "columnName": "departureMinuteOfDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "driveMinutes",
+            "columnName": "driveMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roundTripKilometers",
+            "columnName": "roundTripKilometers",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fuelLiters",
+            "columnName": "fuelLiters",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fuelCostCents",
+            "columnName": "fuelCostCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tollCostCents",
+            "columnName": "tollCostCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cashOnlyCents",
+            "columnName": "cashOnlyCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalCents",
+            "columnName": "totalCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_route_plans_destinationId",
+            "unique": false,
+            "columnNames": [
+              "destinationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_plans_destinationId` ON `${TABLE_NAME}` (`destinationId`)"
+          },
+          {
+            "name": "index_route_plans_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_plans_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "guides",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `destinationId` TEXT NOT NULL, `name` TEXT NOT NULL, `headline` TEXT NOT NULL, `languages` TEXT NOT NULL, `rateCents` INTEGER NOT NULL, `verified` INTEGER NOT NULL, `whatsappNumber` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationId",
+            "columnName": "destinationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "headline",
+            "columnName": "headline",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "languages",
+            "columnName": "languages",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rateCents",
+            "columnName": "rateCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verified",
+            "columnName": "verified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "whatsappNumber",
+            "columnName": "whatsappNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_guides_destinationId",
+            "unique": false,
+            "columnNames": [
+              "destinationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_guides_destinationId` ON `${TABLE_NAME}` (`destinationId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tracks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `destinationId` TEXT, `destinationName` TEXT, `startedAt` INTEGER NOT NULL, `finishedAt` INTEGER NOT NULL, `distanceMeters` INTEGER NOT NULL, `activeDurationMillis` INTEGER NOT NULL, `averageSpeedKmh` REAL NOT NULL, `elevationGainMeters` INTEGER NOT NULL, `pointCount` INTEGER NOT NULL, `status` TEXT NOT NULL DEFAULT 'COMPLETED', PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationId",
+            "columnName": "destinationId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "destinationName",
+            "columnName": "destinationName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAt",
+            "columnName": "finishedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeDurationMillis",
+            "columnName": "activeDurationMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageSpeedKmh",
+            "columnName": "averageSpeedKmh",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "elevationGainMeters",
+            "columnName": "elevationGainMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pointCount",
+            "columnName": "pointCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'COMPLETED'"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tracks_destinationId",
+            "unique": false,
+            "columnNames": [
+              "destinationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tracks_destinationId` ON `${TABLE_NAME}` (`destinationId`)"
+          },
+          {
+            "name": "index_tracks_startedAt",
+            "unique": false,
+            "columnNames": [
+              "startedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tracks_startedAt` ON `${TABLE_NAME}` (`startedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "track_points",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`trackId` TEXT NOT NULL, `sequence` INTEGER NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `elevationMeters` REAL, `accuracyMeters` REAL, `recordedAt` INTEGER NOT NULL, `activeElapsedMillis` INTEGER NOT NULL, `segmentIndex` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`trackId`, `sequence`))",
+        "fields": [
+          {
+            "fieldPath": "trackId",
+            "columnName": "trackId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sequence",
+            "columnName": "sequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "elevationMeters",
+            "columnName": "elevationMeters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "accuracyMeters",
+            "columnName": "accuracyMeters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "recordedAt",
+            "columnName": "recordedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeElapsedMillis",
+            "columnName": "activeElapsedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "segmentIndex",
+            "columnName": "segmentIndex",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "trackId",
+            "sequence"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_track_points_trackId",
+            "unique": false,
+            "columnNames": [
+              "trackId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_track_points_trackId` ON `${TABLE_NAME}` (`trackId`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '06ba2a6847206c1f38e25a61ad4de5a7')"
+    ]
+  }
+}

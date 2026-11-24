@@ -1,20 +1,27 @@
 package com.panamatrip.app.data.photo
 
+import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import androidx.exifinterface.media.ExifInterface
 import com.panamatrip.app.domain.photo.ExifMetadata
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.max
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Foto ya comprimida en almacenamiento interno junto a sus metadatos EXIF. */
 data class PreparedPhoto(
@@ -26,21 +33,30 @@ data class PreparedPhoto(
  * Lee la doble llave EXIF (GPS + fecha original) antes de comprimir y guarda
  * una copia local apta para subida diferida. La compresión elimina el EXIF
  * físico, por lo que la verificación se persiste por separado en Room.
+ *
+ * Toda la E/S (EXIF, decodificación y compresión) corre en [ioDispatcher];
+ * el constructor sin dispatcher mantiene el default para inyección simple.
  */
-class PhotoInspector(private val context: Context) {
+class PhotoInspector(
+    private val context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
 
-    fun preparePhoto(uri: Uri): PreparedPhoto {
+    suspend fun preparePhoto(uri: Uri): PreparedPhoto = withContext(ioDispatcher) {
         val rawExif = readRawExif(uri)
         val compressedUri = compressToPendingUploads(uri, rawExif.orientation)
-        return PreparedPhoto(fileUri = compressedUri, metadata = rawExif.metadata)
+        PreparedPhoto(fileUri = compressedUri, metadata = rawExif.metadata)
     }
 
-    fun readExif(uri: Uri): ExifMetadata = readRawExif(uri).metadata
+    suspend fun readExif(uri: Uri): ExifMetadata = withContext(ioDispatcher) {
+        readRawExif(uri).metadata
+    }
 
     private fun readRawExif(uri: Uri): RawExif {
-        val exif = context.contentResolver.openInputStream(uri)?.use { stream ->
-            runCatching { ExifInterface(stream) }.getOrNull()
-        } ?: return RawExif(ExifMetadata(null, null, null), ExifInterface.ORIENTATION_NORMAL)
+        val exif = runCatching {
+            openStream(uri)?.use { stream -> ExifInterface(stream) }
+        }.getOrNull()
+            ?: return RawExif(ExifMetadata(null, null, null), ExifInterface.ORIENTATION_NORMAL)
 
         val latitude = exif.gpsCoordinate(
             valueTag = ExifInterface.TAG_GPS_LATITUDE,
@@ -74,7 +90,7 @@ class PhotoInspector(private val context: Context) {
 
     private fun compressToPendingUploads(uri: Uri, orientation: Int): String {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        context.contentResolver.openInputStream(uri)?.use { stream ->
+        openStream(uri)?.use { stream ->
             BitmapFactory.decodeStream(stream, null, bounds)
         }
         require(bounds.outWidth > 0 && bounds.outHeight > 0) {
@@ -85,7 +101,7 @@ class PhotoInspector(private val context: Context) {
             inSampleSize = calculateSampleSize(bounds.outWidth, bounds.outHeight)
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-        val decoded = context.contentResolver.openInputStream(uri)?.use { stream ->
+        val decoded = openStream(uri)?.use { stream ->
             BitmapFactory.decodeStream(stream, null, options)
         } ?: error("La imagen seleccionada no se pudo decodificar")
 
@@ -103,6 +119,31 @@ class PhotoInspector(private val context: Context) {
         if (scaled !== decoded) scaled.recycle()
         decoded.recycle()
         return Uri.fromFile(target).toString()
+    }
+
+    /**
+     * Pide el archivo original de MediaStore: la versión "curada" que entrega
+     * el picker suele llegar redactada y sin GPS. Sin permiso de ubicación de
+     * medios el proveedor lanza SecurityException, por eso runCatching.
+     */
+    private fun originalUri(uri: Uri): Uri =
+        if (uri.scheme == ContentResolver.SCHEME_CONTENT && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            runCatching { MediaStore.setRequireOriginal(uri) }.getOrDefault(uri)
+        } else {
+            uri
+        }
+
+    /** Intenta el original con GPS y, si el proveedor lo niega, cae a la Uri recibida. */
+    private fun openStream(uri: Uri): InputStream? {
+        val original = originalUri(uri)
+        runCatching { context.contentResolver.openInputStream(original) }
+            .getOrNull()
+            ?.let { return it }
+        return if (original != uri) {
+            runCatching { context.contentResolver.openInputStream(uri) }.getOrNull()
+        } else {
+            null
+        }
     }
 
     private fun calculateSampleSize(width: Int, height: Int): Int {

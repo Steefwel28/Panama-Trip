@@ -1,40 +1,47 @@
-# AGENTS.md â€” Reglas Globales de Panama-Trip
+# AGENTS.md — Reglas Globales de Panama-Trip
 
 ## Contexto del Proyecto
-AplicaciÃ³n nativa Android minimalista (Material Design 3) para exploraciÃ³n de destinos naturales en PanamÃ¡ y planificaciÃ³n logÃ­stica de ruta (clima, combustible, paradas gastronÃ³micas por horario, peajes con alerta de efectivo, reseÃ±as y directorio de guÃ­as).
+Aplicación nativa Android minimalista (Material 3 Expressive) para exploración de destinos naturales en Panamá y planificación logística de ruta (clima, combustible, paradas gastronómicas por horario, peajes con alerta de efectivo, reseñas y directorio de guías). Toda la información de ruta debe seguir siendo legible sin señal móvil: la persistencia offline es requisito, no extra.
 
 ## Stack Obligatorio
 - **Lenguaje:** Kotlin (JDK 17+).
-- **UI:** Jetpack Compose + Material 3 (sin vistas XML).
-- **Arquitectura:** Clean Architecture + MVVM estricta dividida por features (`destinations`, `planner`, `fuel`, `tolls`, `reviews`, `guides`).
-- **Persistencia Offline:** Room + DataStore (toda ruta guardada debe funcionar sin seÃ±al mÃ³vil).
-- **Dependencias:** Gestionadas exclusivamente mediante Gradle Version Catalog (`gradle/libs.versions.toml`).
+- **Build:** AGP **9.5.1**, Kotlin **2.3.21**, Gradle Version Catalog (`gradle/libs.versions.toml`). Nunca declares versiones sueltas en `build.gradle.kts`.
+- **SDK:** `minSdk = 26`, `compileSdk = 37`, `targetSdk = 37` (Android 17).
+- **UI:** Jetpack Compose + Material 3 Expressive (sin vistas XML, sin librerías de blur/Haze).
+- **Arquitectura:** Clean Architecture + MVVM estricta por feature.
+- **Persistencia Offline:** Room (`2.8.5` + `room-ktx`) + DataStore.
+- **Imágenes/EXIF:** Coil 3 + `androidx.exifinterface`.
+
+## Estructura Real de Paquetes (`com.panamatrip.app`)
+- `core/` — `database` (entidades, DAOs, `PanamaTripDatabase`, seeder), `datastore`, `designsystem`, `format`, `intents`, `preview`, `ui`.
+- `data/` — `mapper`, `photo` (`PhotoInspector`), `repository/*Impl`.
+- `domain/` — `geo`, `logistics`, `model`, `photo`, `ranking`, `repository`, `track` (`TrackRecorderEngine`, `TrackMetricsCalculator`, `ElevationGainCalculator`), `affinity`.
+- `features/` — `explore`, `destinationdetail`, `routeplan`, `saved`, `postcomposer`, `trackrecorder`, `guides`.
+- `di/AppContainer.kt`, `navigation/PanamaTripNavHost.kt`.
 
 ## Reglas Inquebrantables
-1. Nunca escribas lÃ³gica de negocio dentro de funciones `@Composable`.
-2. Todo estado de pantalla debe modelarse como un `StateFlow<UiState>` inmutable usando `sealed interface`.
-3. Antes de dar por terminada cualquier tarea, ejecuta `./gradlew testDebugUnitTest` y `./gradlew assembleDebug` para verificar compilaciÃ³n y pruebas.
-4. Si encuentras deuda tÃ©cnica, strings quemados o recomposiciones evitables, refactoriza antes de responder.
-5. Aplica siempre la skill `ponytail` (nivel `full`): el cambio mÃ¡s pequeÃ±o que resuelva la tarea completa; cierra cada respuesta nombrando en una lÃ­nea lo que se omitiÃ³ y el riesgo.
+1. Nunca escribas lógica de negocio dentro de funciones `@Composable`.
+2. Todo estado de pantalla se modela como `StateFlow<UiState>` inmutable con `sealed interface`.
+3. **Migraciones Room obligatorias:** cualquier cambio en `entities` sube `PanamaTripDatabase.VERSION` y **exige** un `Migration` explícito registrado en `Room.databaseBuilder(...).addMigrations(...)`. Prohibido `fallbackToDestructiveMigration(dropAllTables = true)`: solo se admite `fallbackToDestructiveMigrationOnDowngrade()`. Los tracks GPS y rutas guardadas del usuario no se pueden perder.
+4. **Escrituras atómicas:** toda operación que toque más de una tabla o haga read-modify-write (likes, pertenencia a colecciones, guardar track + puntos) va dentro de `@Transaction` en el DAO o `withTransaction { }` en el repositorio.
+5. **Nada de I/O en el hilo principal:** lectura de EXIF, decodificación de imágenes, cifrado o consultas Room se ejecutan con `withContext(ioDispatcher)` y reciben el `CoroutineDispatcher` por inyección (nada de `Dispatchers.IO` hardcodeado en clases de dominio).
+6. **Persistencia incremental de GPS:** el grabador escribe en Room por lotes con un scope no cancelable (`NonCancellable` / application scope); al iniciar la app se detectan tracks `IN_PROGRESS` huérfanos para ofrecer recuperación.
+7. Antes de cerrar cualquier tarea ejecuta, en PowerShell:
+   ```powershell
+   $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+   .\gradlew.bat testDebugUnitTest assembleDebug --console=plain
+   ```
+   No declares éxito sin `BUILD SUCCESSFUL` y 0 fallos.
+8. Si encuentras deuda técnica, strings quemados o recomposiciones evitables, refactoriza antes de responder.
+9. Aplica la skill `ponytail` (nivel `full`): el cambio más pequeño que resuelva la tarea completa; cierra cada respuesta nombrando en una línea lo omitido y el riesgo.
 
-## EstÃ¡ndar Visual Android 17 (API 37)
-- Configura `compileSdk = 37` y `targetSdk = 37` en `libs.versions.toml` (AGP 8.9.0+).
-- Activa `enableEdgeToEdge()` en `MainActivity` y gestiona `WindowInsets` para que las imÃ¡genes lleguen hasta los bordes fÃ­sicos del telÃ©fono.
-- Usa Material 3 con Dynamic Color + paleta personalizada (verde selva profundo, piedra volcÃ¡nica y acentos terracota).
-- Prohibido usar bordes grises (`BorderStroke`) para separar tarjetas: usa elevaciÃ³n tonal con `surfaceContainerLow` y `surfaceContainerHigh`.
-- Implementa transiciones suaves (`AnimatedVisibility` / `SharedTransitionLayout`) y esquinas redondeadas amplias (16.dp a 24.dp).
+## Estándar Visual Android 17 (API 37)
+- `enableEdgeToEdge()` en `MainActivity` y `WindowInsets` gestionados: las imágenes llegan hasta los bordes físicos.
+- Material 3 **Expressive puro**: superficies sólidas y limpias de alto contraste, Dynamic Color + paleta propia (verde selva profundo, piedra volcánica, acentos terracota).
+- **Prohibido:** Haze, AGSL, `RenderEffect` blur, cristal líquido, `BorderStroke` gris para separar tarjetas. Usa elevación tonal (`surfaceContainerLow` / `surfaceContainerHigh`).
+- Esquinas amplias (16.dp–24.dp) y transiciones suaves (`AnimatedVisibility` / `SharedTransitionLayout`).
+- **Movimiento y háptica:** navegación, filtros de senderos, calculadoras de ruta/combustible y modales usan `spring` + `HapticFeedback` consistente.
+- **Arranque sin bloqueos:** `runBlocking` prohibido en `MainActivity`; usa caché ligera en `SharedPreferences` sincronizada con DataStore.
 
-## Idioma Obligatorio de ComunicaciÃ³n
-- Responde y narra **siempre en espaÃ±ol latinoamericano natural**, incluyendo tus comentarios intermedios antes y despuÃ©s de ejecutar comandos, lecturas o ediciones de archivos.
-- Nunca cambies al inglÃ©s para explicar quÃ© vas a hacer, aunque `@SPEC.md` o las skills internas estÃ©n escritas en inglÃ©s.
-
-## EstÃ¡ndar Visual y Fluidez (ActualizaciÃ³n M3 Expressive + Liquid Glass)
-- **Material 3 Expressive + HÃ¡ptica:** Toda interacciÃ³n clave (navegaciÃ³n, filtros de senderos, calculadoras de ruta/combustible y modales) debe usar animaciones de resorte (`spring`) y respuesta hÃ¡ptica (`HapticFeedback`) consistente.
-- **Liquid Glass (Haze + AGSL):** Aplicar refracciÃ³n, desenfoque de fondo real (`HazeState`) y bordes especulares solo en elementos flotantes (barra inferior, menÃºs y hojas modales), manteniendo las tarjetas base limpias y con contraste tipogrÃ¡fico blindado.
-- **Arranque sin bloqueos:** Prohibido `runBlocking` en `MainActivity`; usar cachÃ© ligero en `SharedPreferences` sincronizado con `DataStore`.
-
-
-## Estándar Visual y Fluidez (Material 3 Expressive + Háptica)
-- **Material 3 Expressive puro:** Superficies sólidas y limpias de alto contraste, sin efectos de vidrio ni desenfoques experimentales.
-- **Movimiento y Háptica:** Toda interacción clave (navegación, filtros de senderos, calculadoras de ruta/combustible y modales) debe usar animaciones de resorte (spring) y respuesta háptica (HapticFeedback) consistente.
-- **Arranque sin bloqueos:** Prohibido unBlocking en MainActivity; usar caché ligero en SharedPreferences sincronizado con DataStore.
+## Idioma Obligatorio de Comunicación
+- Responde y narra **siempre en español latinoamericano natural**, incluso cuando `SPEC.md` o las skills estén en inglés. No cambies a inglés para explicar pasos.

@@ -21,6 +21,7 @@ import com.panamatrip.app.domain.repository.DestinationRepository
 import com.panamatrip.app.domain.repository.PreferencesRepository
 import java.time.Instant
 import java.time.ZoneId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -113,21 +114,26 @@ class PostComposerViewModel(
     }
 
     fun selectPhoto(uri: Uri) {
-        if (busy.value) return
-        busy.value = true
+        // compareAndSet evita doble tap: el trabajo de EXIF compresión es costoso.
+        if (!busy.compareAndSet(expect = false, update = true)) return
         viewModelScope.launch {
-            runCatching { photoInspector.preparePhoto(uri) }
-                .onSuccess { prepared ->
-                    val destination = (state.value as? PostComposerUiState.Content)
-                        ?.selectedDestination
-                    photo.value = SelectedPhotoUi(
-                        fileUri = prepared.fileUri,
-                        metadata = prepared.metadata,
-                        check = verify(prepared.metadata, destination),
-                    )
-                }
-                .onFailure { noticeChannel.tryEmit(UiNotice.ACTION_FAILED) }
-            busy.value = false
+            try {
+                val prepared = photoInspector.preparePhoto(uri)
+                val destination = (state.value as? PostComposerUiState.Content)
+                    ?.selectedDestination
+                photo.value = SelectedPhotoUi(
+                    fileUri = prepared.fileUri,
+                    metadata = prepared.metadata,
+                    check = verify(prepared.metadata, destination),
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                // Foto corrupta o ilegible: se libera el flag y se avisa al usuario.
+                noticeChannel.tryEmit(UiNotice.ACTION_FAILED)
+            } finally {
+                busy.value = false
+            }
         }
     }
 

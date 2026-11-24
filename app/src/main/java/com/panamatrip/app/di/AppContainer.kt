@@ -53,6 +53,7 @@ class AppContainer(context: Context) {
 
     val communityRepository: CommunityRepository by lazy {
         CommunityRepositoryImpl(
+            database = database,
             postDao = database.postDao(),
             collectionDao = database.collectionDao(),
             destinationRepository = destinationRepository,
@@ -61,6 +62,7 @@ class AppContainer(context: Context) {
 
     val collectionRepository: CollectionRepository by lazy {
         CollectionRepositoryImpl(
+            database = database,
             collectionDao = database.collectionDao(),
             postDao = database.postDao(),
         )
@@ -79,7 +81,7 @@ class AppContainer(context: Context) {
     }
 
     val trackRepository: TrackRepository by lazy {
-        TrackRepositoryImpl(trackDao = database.trackDao())
+        TrackRepositoryImpl(database = database)
     }
 
     val photoInspector: PhotoInspector by lazy { PhotoInspector(appContext) }

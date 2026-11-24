@@ -26,15 +26,21 @@ import com.panamatrip.app.PanamaTripApplication
 import com.panamatrip.app.R
 import com.panamatrip.app.core.format.formatElapsedDuration
 import com.panamatrip.app.domain.model.GeoPoint
+import com.panamatrip.app.domain.model.RecordedTrack
 import com.panamatrip.app.domain.model.RecorderStatus
+import com.panamatrip.app.domain.model.TrackPoint
+import com.panamatrip.app.domain.model.TrackProgress
 import com.panamatrip.app.domain.model.TrackSample
 import com.panamatrip.app.domain.model.TrackSnapshot
+import com.panamatrip.app.domain.model.TrackStatus
 import com.panamatrip.app.domain.repository.TrackRepository
 import com.panamatrip.app.domain.track.TrackRecorderEngine
 import java.util.UUID
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
@@ -47,6 +53,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Foreground service ligero que graba el recorrido por satélite sin depender
@@ -67,6 +76,19 @@ class LocationTrackingService : Service() {
     private var startedAtEpochMillis = 0L
     private var destinationId: String? = null
     private var destinationName: String? = null
+
+    /** Identificador persistido: sobrevive aunque el servicio se recree. */
+    private var trackId: String? = null
+
+    /** Puntos aún no escritos en Room. */
+    private val pendingPoints = mutableListOf<TrackPoint>()
+    private var lastFlushElapsedMillis = 0L
+
+    /** Se completa cuando la cabecera IN_PROGRESS ya existe en Room. */
+    private var trackReady = CompletableDeferred<Unit>()
+
+    /** Serializa los lotes: `sequence` se calcula dentro de la sección crítica. */
+    private val flushMutex = Mutex()
 
     override fun onCreate() {
         super.onCreate()
@@ -91,6 +113,7 @@ class LocationTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        flushPendingPoints(force = true)
         stopTicker()
         stopLocationUpdates()
         serviceScope.cancel()
@@ -98,6 +121,12 @@ class LocationTrackingService : Service() {
             _session.value = RecorderSession.Idle
         }
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // El usuario barrió la app: asegura el lote y deja el track IN_PROGRESS.
+        flushPendingPoints(force = true)
+        super.onTaskRemoved(rootIntent)
     }
 
     private fun startRecording(intent: Intent) {
@@ -115,13 +144,42 @@ class LocationTrackingService : Service() {
         destinationId = intent.getStringExtra(EXTRA_DESTINATION_ID)
         destinationName = intent.getStringExtra(EXTRA_DESTINATION_NAME)
         startedAtEpochMillis = System.currentTimeMillis()
+        val newTrackId = "track-${UUID.randomUUID()}"
+        trackId = newTrackId
+        trackReady = CompletableDeferred()
+        pendingPoints.clear()
         engine = TrackRecorderEngine(
-            trackId = "track-${UUID.randomUUID()}",
+            trackId = newTrackId,
             startedAtEpochMillis = startedAtEpochMillis,
             startedElapsedMillis = SystemClock.elapsedRealtime(),
             destinationId = destinationId,
             destinationName = destinationName,
         )
+
+        // La cabecera nace IN_PROGRESS: si Android mata el proceso, al volver a
+        // abrir la app el recorrido queda recuperable en lugar de perderse.
+        persistenceScope.launch {
+            withContext(NonCancellable) {
+                runCatching {
+                    trackRepository.startTrack(
+                        RecordedTrack(
+                            id = newTrackId,
+                            destinationId = destinationId,
+                            destinationName = destinationName,
+                            startedAtEpochMillis = startedAtEpochMillis,
+                            finishedAtEpochMillis = 0L,
+                            distanceMeters = 0,
+                            activeDurationMillis = 0L,
+                            averageSpeedKmh = 0.0,
+                            elevationGainMeters = 0,
+                            pointCount = 0,
+                            status = TrackStatus.IN_PROGRESS,
+                        ),
+                    )
+                }
+                trackReady.complete(Unit)
+            }
+        }
 
         val snapshot = snapshot()
         if (runCatching { startForegroundCompat(snapshot) }.isFailure) {
@@ -145,6 +203,7 @@ class LocationTrackingService : Service() {
         val engine = engine ?: return stopSelf()
         if (engine.pause(SystemClock.elapsedRealtime())) {
             publishSnapshot()
+            flushPendingPoints(force = true)
             stopTicker()
         }
     }
@@ -153,6 +212,7 @@ class LocationTrackingService : Service() {
         val engine = engine ?: return stopSelf()
         if (engine.resume(SystemClock.elapsedRealtime())) {
             publishSnapshot()
+            flushPendingPoints(force = true)
             startTicker()
         }
     }
@@ -167,21 +227,42 @@ class LocationTrackingService : Service() {
             nowElapsedMillis = now,
             finishedAtEpochMillis = System.currentTimeMillis(),
         )
-        serviceScope.launch {
-            val result = runCatching { trackRepository.save(track) }
-            _session.value = RecorderSession.Idle
-            _events.tryEmit(if (result.isSuccess) RecorderEvent.SAVED else RecorderEvent.FAILED)
+        val finishedId = trackId
+        pendingPoints.clear()
+        persistenceScope.launch {
+            withContext(NonCancellable) {
+                val result = flushMutex.withLock {
+                    trackReady.await()
+                    runCatching { trackRepository.save(track) }
+                }
+                _session.value = RecorderSession.Idle
+                _events.tryEmit(if (result.isSuccess) RecorderEvent.SAVED else RecorderEvent.FAILED)
+            }
+            if (finishedId != null) trackId = null
             stopForegroundCompat()
             stopSelf()
         }
     }
 
     private fun discardRecording() {
+        val discardedId = trackId
         engine = null
+        trackId = null
+        pendingPoints.clear()
         stopTicker()
         stopLocationUpdates()
         _session.value = RecorderSession.Idle
         _events.tryEmit(RecorderEvent.DISCARDED)
+        if (discardedId != null) {
+            persistenceScope.launch {
+                withContext(NonCancellable) {
+                    flushMutex.withLock {
+                        trackReady.await()
+                        runCatching { trackRepository.discard(discardedId) }
+                    }
+                }
+            }
+        }
         stopForegroundCompat()
         stopSelf()
     }
@@ -217,6 +298,8 @@ class LocationTrackingService : Service() {
                     break
                 }
                 publishSnapshot()
+                // El ticker es el reloj del flush por tiempo: 30 s sin lote lleno.
+                flushPendingPoints(force = false)
             }
         }
     }
@@ -250,12 +333,79 @@ class LocationTrackingService : Service() {
         val activeEngine = engine ?: return
         val sample = TrackSample(
             point = GeoPoint(location.latitude, location.longitude),
-            elevationMeters = location.altitude.takeIf { location.hasAltitude() },
+            elevationMeters = elevationMetersOf(location),
             accuracyMeters = location.accuracy.takeIf { location.hasAccuracy() },
             capturedAtEpochMillis = location.time.takeIf { it > 0L } ?: System.currentTimeMillis(),
         )
         if (activeEngine.addSample(sample, SystemClock.elapsedRealtime())) {
+            activeEngine.lastRecordedPoint()?.let { point ->
+                pendingPoints += point
+            }
             publishSnapshot()
+            flushPendingPoints(force = false)
+        }
+    }
+
+    /**
+     * API 34+ expone la altitud sobre el nivel del mar: es la métrica estable
+     * para desniveles. En versiones previas se usa la altitud elipsoidal.
+     */
+    private fun elevationMetersOf(location: android.location.Location): Double? =
+        when {
+            Build.VERSION.SDK_INT >= 34 && location.hasMslAltitude() -> location.mslAltitudeMeters
+            location.hasAltitude() -> location.altitude
+            else -> null
+        }
+
+    /**
+     * Escribe el buffer en Room cuando hay 10 puntos o pasaron 30 s. Siempre
+     * corre en [persistenceScope] con [NonCancellable]: si el servicio muere a
+     * mitad de escritura, el lote no se descarta.
+     */
+    private fun flushPendingPoints(force: Boolean) {
+        val id = trackId ?: return
+        val activeEngine = engine
+        val now = SystemClock.elapsedRealtime()
+        val dueByCount = pendingPoints.size >= BATCH_SIZE
+        val dueByTime = now - lastFlushElapsedMillis >= FLUSH_INTERVAL_MILLIS
+        if (!force && !dueByCount && !dueByTime) return
+        if (pendingPoints.isEmpty() && activeEngine == null) return
+
+        val batch = pendingPoints.toList()
+        pendingPoints.clear()
+        lastFlushElapsedMillis = now
+        val snapshot = activeEngine?.snapshot(now)
+        val progress = TrackProgress(
+            status = if (snapshot?.status == RecorderStatus.PAUSED) {
+                TrackStatus.PAUSED
+            } else {
+                TrackStatus.IN_PROGRESS
+            },
+            distanceMeters = snapshot?.distanceMeters ?: 0,
+            activeDurationMillis = snapshot?.activeDurationMillis ?: 0L,
+            averageSpeedKmh = snapshot?.averageSpeedKmh ?: 0.0,
+            elevationGainMeters = snapshot?.elevationGainMeters ?: 0,
+            pointCount = snapshot?.pointCount ?: 0,
+            finishedAtEpochMillis = 0L,
+        )
+
+        persistenceScope.launch {
+            withContext(NonCancellable) {
+                flushMutex.withLock {
+                    trackReady.await()
+                    val result = runCatching {
+                        if (batch.isNotEmpty()) {
+                            trackRepository.persistBatch(id, batch, progress)
+                        } else {
+                            trackRepository.updateProgress(id, progress)
+                        }
+                    }
+                    if (result.isFailure) {
+                        // Devolver el lote al frente conserva el orden de secuencia.
+                        pendingPoints.addAll(0, batch)
+                    }
+                }
+            }
         }
     }
 
@@ -392,6 +542,14 @@ class LocationTrackingService : Service() {
         private const val MIN_UPDATE_DISTANCE_METERS = 4f
         private const val TICK_INTERVAL_MILLIS = 1_000L
         private const val METERS_PER_KILOMETER = 1_000
+        private const val BATCH_SIZE = 10
+        private const val FLUSH_INTERVAL_MILLIS = 30_000L
+
+        /**
+         * Scope de proceso para escrituras críticas: no se cancela con el
+         * servicio ni con la Activity, así un lote en vuelo siempre termina.
+         */
+        private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         private val EMPTY_SNAPSHOT = TrackSnapshot(
             status = RecorderStatus.RECORDING,
