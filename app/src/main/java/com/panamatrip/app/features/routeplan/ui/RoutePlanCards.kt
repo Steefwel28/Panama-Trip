@@ -41,6 +41,7 @@ import com.panamatrip.app.core.designsystem.component.PrimaryActionButton
 import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
 import com.panamatrip.app.core.designsystem.component.tonalGradient
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.clockLabel
 import com.panamatrip.app.core.designsystem.labels.distanceLabel
@@ -163,19 +164,32 @@ internal fun LogisticsControls(
         shape = RoundedCornerShape(Dimens.cardCorner),
         tonalElevation = Dimens.tonalElevation,
     ) {
+        val haptics = rememberPanamaHaptics()
         Column(
             modifier = Modifier.padding(Dimens.cardPadding),
             verticalArrangement = Arrangement.spacedBy(Dimens.cardPadding),
         ) {
             VehicleBlock(content = content)
-            FuelBlock(fuelType = content.fuelType, onSelectFuel = onSelectFuel)
+            FuelBlock(
+                fuelType = content.fuelType,
+                onSelectFuel = { fuel ->
+                    haptics.segment()
+                    onSelectFuel(fuel)
+                },
+            )
             SurchargeBlock(
                 enabled = content.surchargeEnabled,
-                onSetSurcharge = onSetSurcharge,
+                onSetSurcharge = { enabled ->
+                    haptics.toggle(enabled)
+                    onSetSurcharge(enabled)
+                },
             )
             DepartureBlock(
                 selected = content.departureWindow,
-                onSelectDeparture = onSelectDeparture,
+                onSelectDeparture = { window ->
+                    haptics.segment()
+                    onSelectDeparture(window)
+                },
             )
         }
     }

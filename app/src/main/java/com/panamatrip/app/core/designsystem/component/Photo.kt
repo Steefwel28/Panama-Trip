@@ -5,10 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -20,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import kotlin.math.abs
 
 /**
@@ -67,6 +73,23 @@ fun TonalImage(
                 contentScale = contentScale,
                 modifier = Modifier.fillMaxSize(),
             )
+        } else {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(44.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                shape = CircleShape,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = PanamaIcons.Camera,
+                        contentDescription = contentDescription,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -99,7 +122,7 @@ fun PhotoHero(
                 .background(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
-                            0f to scrimColor.copy(alpha = 0.35f),
+                            0f to scrimColor.copy(alpha = 0.55f),
                             0.45f to Color.Transparent,
                             1f to scrimColor.copy(alpha = 0.88f),
                         ),

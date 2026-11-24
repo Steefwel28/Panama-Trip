@@ -15,14 +15,11 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +41,7 @@ import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.intents.MapIntents
 import com.panamatrip.app.core.intents.launchFirstAvailable
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.logistics.FuelType
@@ -59,7 +57,7 @@ fun RoutePlanRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
 
     LaunchedEffect(viewModel) {
         viewModel.notices.collect { notice ->
@@ -69,7 +67,6 @@ fun RoutePlanRoute(
 
     RoutePlanScreen(
         state = state,
-        snackbarHostState = snackbarHostState,
         onRetry = viewModel::retry,
         onExplore = {
             viewModel.clearRoute()
@@ -92,7 +89,6 @@ fun RoutePlanRoute(
 @Composable
 fun RoutePlanScreen(
     state: RoutePlanUiState,
-    snackbarHostState: SnackbarHostState,
     onRetry: () -> Unit,
     onExplore: () -> Unit,
     onWaze: (Destination) -> Unit,
@@ -139,10 +135,6 @@ fun RoutePlanScreen(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 }
 

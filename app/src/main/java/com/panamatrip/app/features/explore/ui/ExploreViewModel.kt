@@ -58,6 +58,12 @@ class ExploreViewModel(
     private val savePostId = MutableStateFlow<String?>(null)
     private val retryTrigger = MutableStateFlow(0)
 
+    /**
+     * Orden congelado del feed mientras el usuario interactúa: dar o quitar
+     * like actualiza afinidad y likeCount, pero la tarjeta no debe saltar.
+     */
+    private val frozenFeedOrder = MutableStateFlow<List<String>?>(null)
+
     private val noticeChannel = MutableSharedFlow<UiNotice>(
         extraBufferCapacity = NOTICE_BUFFER,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
@@ -145,12 +151,13 @@ class ExploreViewModel(
     }
 
     fun toggleLike(post: CommunityPost) {
+        (state.value as? ExploreUiState.Content)?.let { content ->
+            frozenFeedOrder.value = content.posts.map { it.post.id }
+        }
         viewModelScope.launch {
             runCatching {
                 communityRepository.toggleLike(post.id)
                 if (!post.isLiked) preferencesRepository.recordLike(post.destination)
-            }.onSuccess {
-                publishNotice(UiNotice.LIKE_UPDATED)
             }.onFailure {
                 publishNotice(UiNotice.ACTION_FAILED)
             }
@@ -232,7 +239,15 @@ class ExploreViewModel(
             return ExploreUiState.Empty(bundle.tab)
         }
         val affinity = bundle.preferences.affinity
-        val rankedPosts = FeedRanker.rank(bundle.posts, affinity, clock()).map { post ->
+        val rankedPosts = FeedRanker.rank(bundle.posts, affinity, clock())
+        val frozenOrder = frozenFeedOrder.value
+        val orderedPosts = if (frozenOrder.isNullOrEmpty()) {
+            rankedPosts
+        } else {
+            val position = frozenOrder.withIndex().associate { (index, id) -> id to index }
+            rankedPosts.sortedBy { position[it.id] ?: Int.MAX_VALUE }
+        }
+        val feedPosts = orderedPosts.map { post ->
             FeedPostUi(post = post, affinity = affinity.normalizedFor(post.destination))
         }
         val destinationsWithDistance = bundle.destinations.map { destination ->
@@ -256,7 +271,7 @@ class ExploreViewModel(
 
         return ExploreUiState.Content(
             tab = bundle.tab,
-            posts = rankedPosts,
+            posts = feedPosts,
             directory = directoryEntries,
             filters = bundle.filters,
             guestMode = bundle.preferences.guestMode,

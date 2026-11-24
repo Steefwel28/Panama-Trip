@@ -23,8 +23,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +49,7 @@ import com.panamatrip.app.core.designsystem.component.TonalImage
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.monthYearLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.CommunityPost
@@ -64,7 +62,7 @@ fun SavedRoute(
 ) {
     val viewModel: SavedViewModel = viewModel(factory = SavedViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
     val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
@@ -75,7 +73,6 @@ fun SavedRoute(
 
     SavedScreen(
         state = state,
-        snackbarHostState = snackbarHostState,
         onSelectCollection = viewModel::selectCollection,
         onCreateCollection = viewModel::createCollection,
         onUnsave = viewModel::unsave,
@@ -88,7 +85,6 @@ fun SavedRoute(
 @Composable
 fun SavedScreen(
     state: SavedUiState,
-    snackbarHostState: SnackbarHostState,
     onSelectCollection: (String?) -> Unit,
     onCreateCollection: (String) -> Unit,
     onUnsave: (CommunityPost, String) -> Unit,
@@ -130,8 +126,6 @@ fun SavedScreen(
             )
         }
     }
-
-    SnackbarHost(hostState = snackbarHostState)
 
     if (showCreateDialog) {
         CreateCollectionDialog(

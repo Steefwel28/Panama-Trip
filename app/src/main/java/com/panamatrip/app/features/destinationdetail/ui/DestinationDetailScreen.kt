@@ -132,8 +132,8 @@ fun DestinationDetailScreen(
                 .align(Alignment.TopStart)
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(Dimens.tightGap),
-            color = MaterialTheme.colorScheme.scrim.copy(alpha = SCRIM_ALPHA),
-            contentColor = Color.White,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             shape = CircleShape,
         ) {
             IconButton(onClick = onBack) {
@@ -485,5 +485,3 @@ private fun ReviewCard(review: DestinationReview) {
         }
     }
 }
-
-private const val SCRIM_ALPHA = 0.38f

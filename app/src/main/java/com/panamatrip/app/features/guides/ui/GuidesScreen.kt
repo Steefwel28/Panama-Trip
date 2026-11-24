@@ -24,8 +24,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +52,7 @@ import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.core.intents.WhatsAppIntents
 import com.panamatrip.app.core.intents.launchFirstAvailable
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.LocalGuide
 import kotlinx.coroutines.launch
@@ -64,12 +63,11 @@ fun GuidesRoute(container: AppContainer) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
 
     GuidesScreen(
         state = state,
-        snackbarHostState = snackbarHostState,
         onSelectDestination = viewModel::selectDestination,
         onRetry = viewModel::retry,
         onWhatsApp = { guide ->
@@ -95,7 +93,6 @@ fun GuidesRoute(container: AppContainer) {
 @Composable
 fun GuidesScreen(
     state: GuidesUiState,
-    snackbarHostState: SnackbarHostState,
     onSelectDestination: (String?) -> Unit,
     onRetry: () -> Unit,
     onWhatsApp: (LocalGuide) -> Unit,
@@ -127,11 +124,6 @@ fun GuidesScreen(
                 )
             }
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 }
 

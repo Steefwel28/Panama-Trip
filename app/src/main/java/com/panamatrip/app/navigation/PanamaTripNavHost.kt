@@ -1,5 +1,10 @@
 package com.panamatrip.app.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -7,12 +12,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -24,6 +34,9 @@ import androidx.navigation.navArgument
 import androidx.navigation.navOptions
 import com.panamatrip.app.R
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
+import com.panamatrip.app.core.designsystem.theme.PanamaMotion
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.features.destinationdetail.ui.DestinationDetailRoute
 import com.panamatrip.app.features.explore.ui.ExploreRoute
@@ -85,10 +98,12 @@ fun PanamaTripApp(container: AppContainer) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val isTopLevel = currentRoute != null && isTopLevelRoute(currentRoute)
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             if (isTopLevel) {
                 PanamaBottomBar(
@@ -98,11 +113,26 @@ fun PanamaTripApp(container: AppContainer) {
             }
         },
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.EXPLORE,
-            modifier = Modifier.padding(innerPadding),
-        ) {
+        CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
+            NavHost(
+                navController = navController,
+                startDestination = Routes.EXPLORE,
+                modifier = Modifier.padding(innerPadding),
+                enterTransition = {
+                    slideInHorizontally(
+                        animationSpec = PanamaMotion.spatial<IntOffset>(),
+                        initialOffsetX = { it / 10 },
+                    ) + fadeIn(animationSpec = tween(FADE_MILLIS))
+                },
+                exitTransition = { fadeOut(animationSpec = tween(FADE_EXIT_MILLIS)) },
+                popEnterTransition = { fadeIn(animationSpec = tween(FADE_MILLIS)) },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        animationSpec = PanamaMotion.spatial<IntOffset>(),
+                        targetOffsetX = { it / 10 },
+                    ) + fadeOut(animationSpec = tween(FADE_EXIT_MILLIS))
+                },
+            ) {
             composable(Routes.EXPLORE) {
                 ExploreRoute(
                     container = container,
@@ -174,6 +204,7 @@ fun PanamaTripApp(container: AppContainer) {
                     onPublished = { navController.popBackStack() },
                 )
             }
+            }
         }
     }
 }
@@ -183,6 +214,7 @@ private fun PanamaBottomBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit,
 ) {
+    val haptics = rememberPanamaHaptics()
     NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
         bottomTabs.forEach { tab ->
             val selected = when (tab.route) {
@@ -191,7 +223,10 @@ private fun PanamaBottomBar(
             }
             NavigationBarItem(
                 selected = selected,
-                onClick = { onNavigate(tab.route) },
+                onClick = {
+                    haptics.segment()
+                    onNavigate(tab.route)
+                },
                 icon = {
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.icon,
@@ -220,3 +255,6 @@ private fun isTopLevelRoute(route: String): Boolean =
         route == Routes.SAVED ||
         route == Routes.GUIDES ||
         route.startsWith(Routes.ROUTE_BASE)
+
+private const val FADE_MILLIS = 180
+private const val FADE_EXIT_MILLIS = 120

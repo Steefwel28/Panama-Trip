@@ -1,6 +1,8 @@
 package com.panamatrip.app.core.designsystem.theme
 
 import android.os.Build
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -105,4 +107,18 @@ fun PanamaTripTheme(
         typography = PanamaTripTypography,
         content = content,
     )
+}
+
+/**
+ * Esquema de movimiento expresivo de Panama-Trip: respuesta rápida y rebote
+ * controlado. Material3 1.4.0 mantiene `MotionScheme` como API interna, así que
+ * la app expone sus propios resortes y los usa en toda la UI.
+ */
+object PanamaMotion {
+
+    fun <T> spatial(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 0.78f, stiffness = 700f)
+
+    fun <T> bouncy(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 0.55f, stiffness = 600f)
 }

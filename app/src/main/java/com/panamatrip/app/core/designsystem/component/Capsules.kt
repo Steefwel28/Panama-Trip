@@ -37,9 +37,9 @@ fun MetricCapsule(
 ) {
     Surface(
         modifier = modifier,
-        color = Color.White.copy(alpha = 0.18f),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = RoundedCornerShape(Dimens.innerCorner),
-        contentColor = Color.White,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         FlowRow(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -55,7 +55,7 @@ fun MetricCapsule(
                         Text(
                             text = "·",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.6f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
                     }
                     MetricCell(item)
@@ -71,7 +71,7 @@ private fun MetricCell(item: MetricItem) {
         Text(
             text = item.label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.72f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -82,7 +82,7 @@ private fun MetricCell(item: MetricItem) {
             } else {
                 MaterialTheme.typography.labelMedium
             },
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -117,8 +117,8 @@ fun TonalTag(
 fun OverlayTag(text: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        color = Color.Black.copy(alpha = 0.42f),
-        contentColor = Color.White,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(50),
     ) {
         Text(

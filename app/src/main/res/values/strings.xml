@@ -254,7 +254,6 @@
     <string name="error_retry">Reintentar</string>
 
     <!-- Avisos -->
-    <string name="notice_like_updated">Tu interés quedó registrado.</string>
     <string name="notice_comment_published">Comentario publicado.</string>
     <string name="notice_saved">Guardado en tu colección.</string>
     <string name="notice_removed">Quitado de la colección.</string>

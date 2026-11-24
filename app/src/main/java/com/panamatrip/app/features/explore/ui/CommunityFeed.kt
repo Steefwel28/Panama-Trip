@@ -1,5 +1,6 @@
 package com.panamatrip.app.features.explore.ui
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import com.panamatrip.app.core.designsystem.component.MetricItem
 import com.panamatrip.app.core.designsystem.component.OverlayTag
 import com.panamatrip.app.core.designsystem.component.PhotoHero
 import com.panamatrip.app.core.designsystem.component.SocialAction
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.commentsLabel
 import com.panamatrip.app.core.designsystem.labels.displayName
@@ -44,6 +46,7 @@ import com.panamatrip.app.core.designsystem.labels.likesLabel
 import com.panamatrip.app.core.designsystem.labels.monthYearLabel
 import com.panamatrip.app.core.designsystem.labels.walkLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.PanamaMotion
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.Destination
 
@@ -97,8 +100,13 @@ private fun CommunityPostCard(
     val post = item.post
     val destination = post.destination
     val openDetailLabel = stringResource(R.string.action_open_detail)
+    val haptics = rememberPanamaHaptics()
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(animationSpec = PanamaMotion.spatial()),
+    ) {
         PhotoHero(
             imageUrl = post.imageUrl,
             contentDescription = stringResource(R.string.photo_of, destination.name),
@@ -197,7 +205,10 @@ private fun CommunityPostCard(
                 SocialAction(
                     icon = if (post.isLiked) PanamaIcons.Heart else PanamaIcons.HeartOutline,
                     contentDescription = stringResource(R.string.action_like),
-                    onClick = { onLike(post) },
+                    onClick = {
+                        haptics.toggle(!post.isLiked)
+                        onLike(post)
+                    },
                     label = likesLabel(post.likeCount),
                     selected = post.isLiked,
                 )
@@ -214,7 +225,10 @@ private fun CommunityPostCard(
                         PanamaIcons.Bookmark
                     },
                     contentDescription = stringResource(R.string.action_save),
-                    onClick = { onOpenSaveSheet(post.id) },
+                    onClick = {
+                        haptics.segment()
+                        onOpenSaveSheet(post.id)
+                    },
                     selected = post.savedCollectionIds.isNotEmpty(),
                     selectedTint = MaterialTheme.colorScheme.primary,
                 )

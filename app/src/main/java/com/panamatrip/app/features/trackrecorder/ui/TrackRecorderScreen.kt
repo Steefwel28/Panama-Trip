@@ -25,8 +25,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +60,8 @@ import com.panamatrip.app.core.designsystem.labels.speedLabel
 import com.panamatrip.app.core.designsystem.labels.trackTimestampLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.designsystem.theme.MetricType
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.RecorderStatus
@@ -76,9 +75,10 @@ fun TrackRecorderRoute(
         factory = TrackRecorderViewModel.factory(container),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
     val resources = LocalResources.current
     val context = LocalContext.current
+    val haptics = rememberPanamaHaptics()
     var permissionDenied by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
@@ -98,10 +98,10 @@ fun TrackRecorderRoute(
 
     TrackRecorderScreen(
         state = state,
-        snackbarHostState = snackbarHostState,
         permissionDenied = permissionDenied,
         onBack = onBack,
         onStart = {
+            haptics.confirm()
             if (context.hasLocationPermission()) {
                 permissionDenied = false
                 viewModel.start()
@@ -117,10 +117,22 @@ fun TrackRecorderRoute(
                 )
             }
         },
-        onPause = viewModel::pause,
-        onResume = viewModel::resume,
-        onFinish = viewModel::finish,
-        onDiscard = viewModel::discard,
+        onPause = {
+            haptics.toggle(false)
+            viewModel.pause()
+        },
+        onResume = {
+            haptics.toggle(true)
+            viewModel.resume()
+        },
+        onFinish = {
+            haptics.confirm()
+            viewModel.finish()
+        },
+        onDiscard = {
+            haptics.toggle(false)
+            viewModel.discard()
+        },
         onKeepRecovered = viewModel::keepRecovered,
         onDiscardRecovered = viewModel::discardRecovered,
         onRetry = viewModel::retry,
@@ -130,7 +142,6 @@ fun TrackRecorderRoute(
 @Composable
 fun TrackRecorderScreen(
     state: TrackRecorderUiState,
-    snackbarHostState: SnackbarHostState,
     permissionDenied: Boolean,
     onBack: () -> Unit,
     onStart: () -> Unit,
@@ -176,10 +187,6 @@ fun TrackRecorderScreen(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 
     if (showDiscardDialog) {

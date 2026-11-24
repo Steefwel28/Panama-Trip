@@ -1,6 +1,11 @@
 package com.panamatrip.app.features.explore.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -19,8 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,6 +39,7 @@ import com.panamatrip.app.core.designsystem.component.TonalImage
 import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
 import com.panamatrip.app.core.designsystem.component.VehicleAccessDots
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.displayName
 import com.panamatrip.app.core.designsystem.labels.distanceLabel
@@ -38,6 +47,7 @@ import com.panamatrip.app.core.designsystem.labels.driveLabel
 import com.panamatrip.app.core.designsystem.labels.elevationLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.designsystem.theme.MetricType
+import com.panamatrip.app.core.designsystem.theme.PanamaMotion
 import com.panamatrip.app.domain.geo.DistanceBand
 import com.panamatrip.app.domain.model.Ecosystem
 import com.panamatrip.app.domain.model.VehicleType
@@ -117,38 +127,38 @@ private fun DirectoryFiltersBlock(
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
             VehicleType.entries.forEach { vehicle ->
-                FilterChip(
+                FilterPill(
                     selected = filters.vehicle == vehicle,
                     onClick = { onToggleVehicle(vehicle) },
-                    label = { Text(vehicle.displayName()) },
+                    label = vehicle.displayName(),
                 )
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
             Ecosystem.entries.forEach { ecosystem ->
-                FilterChip(
+                FilterPill(
                     selected = filters.ecosystem == ecosystem,
                     onClick = { onToggleEcosystem(ecosystem) },
-                    label = { Text(ecosystem.displayName()) },
+                    label = ecosystem.displayName(),
                 )
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
-            FilterChip(
+            FilterPill(
                 selected = filters.maxDistanceMeters == DistanceBand.NEAR_LIMIT_METERS,
                 onClick = { onToggleDistance(DistanceBand.NEAR_LIMIT_METERS) },
-                label = { Text(stringResource(R.string.directory_distance_near)) },
+                label = stringResource(R.string.directory_distance_near),
             )
-            FilterChip(
+            FilterPill(
                 selected = filters.maxDistanceMeters == DistanceBand.MID_LIMIT_METERS,
                 onClick = { onToggleDistance(DistanceBand.MID_LIMIT_METERS) },
-                label = { Text(stringResource(R.string.directory_distance_mid)) },
+                label = stringResource(R.string.directory_distance_mid),
             )
             if (filters.isActive) {
-                FilterChip(
+                FilterPill(
                     selected = true,
                     onClick = onClearFilters,
-                    label = { Text(stringResource(R.string.directory_clear_filters)) },
+                    label = stringResource(R.string.directory_clear_filters),
                 )
             }
         }
@@ -161,17 +171,62 @@ private fun DirectoryFiltersBlock(
 }
 
 @Composable
+private fun FilterPill(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+) {
+    val haptics = rememberPanamaHaptics()
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.96f,
+        animationSpec = PanamaMotion.bouncy(),
+        label = "filterPillScale",
+    )
+    FilterChip(
+        selected = selected,
+        onClick = {
+            haptics.toggle(!selected)
+            onClick()
+        },
+        label = { Text(label) },
+        modifier = Modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        },
+    )
+}
+
+@Composable
 private fun DestinationRow(
     entry: DirectoryEntryUi,
     onClick: () -> Unit,
 ) {
     val destination = entry.destination
+    val haptics = rememberPanamaHaptics()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val containerColor by animateColorAsState(
+        targetValue = if (pressed) {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
+        animationSpec = PanamaMotion.spatial(),
+        label = "destinationCardContainer",
+    )
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                onClick = {
+                    haptics.segment()
+                    onClick()
+                },
+            ),
         shape = RoundedCornerShape(Dimens.cardCorner),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = containerColor,
         tonalElevation = Dimens.tonalElevation,
     ) {
         Row(

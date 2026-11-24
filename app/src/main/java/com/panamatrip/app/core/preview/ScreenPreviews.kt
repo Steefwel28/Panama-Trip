@@ -3,10 +3,8 @@ package com.panamatrip.app.core.preview
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.panamatrip.app.core.designsystem.theme.PanamaTripTheme
@@ -38,7 +36,6 @@ private fun PreviewFrame(
 private fun ExplorePreview(tab: ExploreTab) {
     ExploreScreen(
         state = PreviewFixtures.exploreState(tab),
-        snackbarHostState = remember { SnackbarHostState() },
         onSelectTab = {},
         onToggleVehicle = {},
         onToggleEcosystem = {},
@@ -130,7 +127,6 @@ private fun DetailDarkPreview() {
 private fun SavedPreview() {
     SavedScreen(
         state = PreviewFixtures.savedState(),
-        snackbarHostState = remember { SnackbarHostState() },
         onSelectCollection = {},
         onCreateCollection = {},
         onUnsave = { _, _ -> },
@@ -162,7 +158,6 @@ private fun SavedDarkPreview() {
 private fun RoutePreview() {
     RoutePlanScreen(
         state = PreviewFixtures.routeState(),
-        snackbarHostState = remember { SnackbarHostState() },
         onRetry = {},
         onExplore = {},
         onWaze = {},
@@ -197,7 +192,6 @@ private fun RouteDarkPreview() {
 private fun GuidesPreview() {
     GuidesScreen(
         state = PreviewFixtures.guidesState(),
-        snackbarHostState = remember { SnackbarHostState() },
         onSelectDestination = {},
         onRetry = {},
         onWhatsApp = {},
@@ -226,7 +220,6 @@ private fun GuidesDarkPreview() {
 private fun RecorderPreview() {
     TrackRecorderScreen(
         state = PreviewFixtures.recorderState(),
-        snackbarHostState = remember { SnackbarHostState() },
         permissionDenied = false,
         onBack = {},
         onStart = {},
@@ -260,7 +253,6 @@ private fun RecorderDarkPreview() {
 private fun ComposerPreview() {
     PostComposerScreen(
         state = PreviewFixtures.composerState(),
-        snackbarHostState = remember { SnackbarHostState() },
         onBack = {},
         onRetry = {},
         onSelectDestination = {},

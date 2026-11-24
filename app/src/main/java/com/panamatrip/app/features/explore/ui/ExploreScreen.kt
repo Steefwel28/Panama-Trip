@@ -16,13 +16,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
@@ -38,6 +35,7 @@ import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.core.ui.CollectionChoiceUi
 import com.panamatrip.app.core.ui.CollectionPickerSheet
@@ -58,7 +56,7 @@ fun ExploreRoute(
 ) {
     val viewModel: ExploreViewModel = viewModel(factory = ExploreViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
     val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
@@ -69,7 +67,6 @@ fun ExploreRoute(
 
     ExploreScreen(
         state = state,
-        snackbarHostState = snackbarHostState,
         onSelectTab = viewModel::selectTab,
         onToggleVehicle = viewModel::toggleVehicleFilter,
         onToggleEcosystem = viewModel::toggleEcosystemFilter,
@@ -97,7 +94,6 @@ fun ExploreRoute(
 @Composable
 fun ExploreScreen(
     state: ExploreUiState,
-    snackbarHostState: SnackbarHostState,
     onSelectTab: (ExploreTab) -> Unit,
     onToggleVehicle: (VehicleType) -> Unit,
     onToggleEcosystem: (Ecosystem) -> Unit,
@@ -201,8 +197,6 @@ fun ExploreScreen(
             }
         }
     }
-
-    SnackbarHost(hostState = snackbarHostState)
 }
 
 @Composable

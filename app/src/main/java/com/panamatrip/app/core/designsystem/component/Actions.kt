@@ -1,5 +1,7 @@
 package com.panamatrip.app.core.designsystem.component
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -14,12 +16,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.PanamaMotion
 
 /** Acción principal de pantalla: una sola por vista. */
 @Composable
@@ -90,6 +95,16 @@ fun SocialAction(
     selected: Boolean = false,
     selectedTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.tertiary,
 ) {
+    val tint by animateColorAsState(
+        targetValue = if (selected) selectedTint else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = PanamaMotion.spatial(),
+        label = "socialActionTint",
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.9f,
+        animationSpec = PanamaMotion.bouncy(),
+        label = "socialActionScale",
+    )
     Row(
         modifier = modifier.defaultMinSize(minHeight = Dimens.minimumTouchTarget),
         verticalAlignment = Alignment.CenterVertically,
@@ -98,15 +113,20 @@ fun SocialAction(
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                modifier = Modifier.size(24.dp),
-                tint = if (selected) selectedTint else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(24.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
+                tint = tint,
             )
         }
         if (label != null) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (selected) selectedTint else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = tint,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

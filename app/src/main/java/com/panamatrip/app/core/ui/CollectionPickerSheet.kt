@@ -1,5 +1,6 @@
 package com.panamatrip.app.core.ui
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,8 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.panamatrip.app.R
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.designsystem.theme.PanamaMotion
 
 /** Colección disponible en el selector de guardado. */
 data class CollectionChoiceUi(
@@ -55,6 +58,7 @@ fun CollectionPickerSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var newCollectionName by rememberSaveable { mutableStateOf("") }
+    val haptics = rememberPanamaHaptics()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -81,15 +85,23 @@ fun CollectionPickerSheet(
             )
 
             choices.forEach { choice ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onToggle(choice.id) },
-                    color = if (choice.selected) {
+                val containerColor by animateColorAsState(
+                    targetValue = if (choice.selected) {
                         MaterialTheme.colorScheme.primaryContainer
                     } else {
                         MaterialTheme.colorScheme.surfaceContainerHigh
                     },
+                    animationSpec = PanamaMotion.spatial(),
+                    label = "collectionChoice",
+                )
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            haptics.toggle(!choice.selected)
+                            onToggle(choice.id)
+                        },
+                    color = containerColor,
                     shape = RoundedCornerShape(Dimens.innerCorner),
                 ) {
                     Row(

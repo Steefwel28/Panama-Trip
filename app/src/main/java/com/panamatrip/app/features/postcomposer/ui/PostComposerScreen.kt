@@ -27,15 +27,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,6 +56,7 @@ import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.dateLabel
 import com.panamatrip.app.core.designsystem.labels.distanceLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
+import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.Destination
@@ -75,7 +73,7 @@ fun PostComposerRoute(
         factory = PostComposerViewModel.factory(container),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
     val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
@@ -122,7 +120,6 @@ fun PostComposerRoute(
 
     PostComposerScreen(
         state = state,
-        snackbarHostState = snackbarHostState,
         onBack = onBack,
         onRetry = viewModel::retry,
         onSelectDestination = viewModel::selectDestination,
@@ -135,7 +132,6 @@ fun PostComposerRoute(
 @Composable
 fun PostComposerScreen(
     state: PostComposerUiState,
-    snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onSelectDestination: (String) -> Unit,
@@ -177,10 +173,6 @@ fun PostComposerScreen(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 }
 

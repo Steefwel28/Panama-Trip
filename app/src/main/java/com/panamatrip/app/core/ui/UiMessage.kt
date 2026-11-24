@@ -8,7 +8,6 @@ enum class UiError {
 
 /** Avisos efímeros (snackbar) disparados por acciones del invitado. */
 enum class UiNotice {
-    LIKE_UPDATED,
     COMMENT_PUBLISHED,
     SAVED,
     REMOVED,
