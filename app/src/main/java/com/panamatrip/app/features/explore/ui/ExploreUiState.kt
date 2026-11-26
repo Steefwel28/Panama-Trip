@@ -14,6 +14,7 @@ enum class ExploreTab {
 data class FeedPostUi(
     val post: CommunityPost,
     val affinity: Float,
+    val distanceMeters: Int,
 )
 
 data class DirectoryEntryUi(

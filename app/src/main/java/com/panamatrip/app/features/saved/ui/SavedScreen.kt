@@ -59,6 +59,7 @@ fun SavedRoute(
     container: AppContainer,
     onOpenDestination: (String) -> Unit,
     onExplore: () -> Unit,
+    showHeader: Boolean = true,
 ) {
     val viewModel: SavedViewModel = viewModel(factory = SavedViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -79,6 +80,7 @@ fun SavedRoute(
         onRetry = viewModel::retry,
         onOpenDestination = onOpenDestination,
         onExplore = onExplore,
+        showHeader = showHeader,
     )
 }
 
@@ -92,14 +94,17 @@ fun SavedScreen(
     onOpenDestination: (String) -> Unit,
     onExplore: () -> Unit,
     modifier: Modifier = Modifier,
+    showHeader: Boolean = true,
 ) {
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        SavedHeader(
-            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-            onCreateCollection = { showCreateDialog = true },
-        )
+        if (showHeader) {
+            SavedHeader(
+                modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                onCreateCollection = { showCreateDialog = true },
+            )
+        }
 
         when (state) {
             SavedUiState.Loading -> ScreenLoading()

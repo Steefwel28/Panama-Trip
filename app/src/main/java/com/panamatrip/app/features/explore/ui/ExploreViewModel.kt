@@ -13,6 +13,7 @@ import com.panamatrip.app.domain.geo.GeoCalculator
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.Destination
 import com.panamatrip.app.domain.model.Ecosystem
+import com.panamatrip.app.domain.model.GeoPoint
 import com.panamatrip.app.domain.model.PostComment
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -49,6 +49,7 @@ class ExploreViewModel(
     private val communityRepository: CommunityRepository,
     private val collectionRepository: CollectionRepository,
     private val preferencesRepository: PreferencesRepository,
+    private val locationSource: suspend () -> GeoPoint? = { null },
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
@@ -57,6 +58,9 @@ class ExploreViewModel(
     private val commentPostId = MutableStateFlow<String?>(null)
     private val savePostId = MutableStateFlow<String?>(null)
     private val retryTrigger = MutableStateFlow(0)
+
+    /** Última ubicación conocida del teléfono; null cae a Ciudad de Panamá. */
+    private val userLocation = MutableStateFlow<GeoPoint?>(null)
 
     /**
      * Orden congelado del feed mientras el usuario interactúa: dar o quitar
@@ -84,6 +88,7 @@ class ExploreViewModel(
         val filters: DirectoryFilters = DirectoryFilters(),
         val commentPostId: String? = null,
         val savePostId: String? = null,
+        val location: GeoPoint? = null,
     )
 
     val state: StateFlow<ExploreUiState> = retryTrigger.flatMapLatest {
@@ -100,6 +105,7 @@ class ExploreViewModel(
             .combine(filters) { bundle, activeFilters -> bundle.copy(filters = activeFilters) }
             .combine(commentPostId) { bundle, id -> bundle.copy(commentPostId = id) }
             .combine(savePostId) { bundle, id -> bundle.copy(savePostId = id) }
+            .combine(userLocation) { bundle, location -> bundle.copy(location = location) }
             .map(::toUiState)
             .catch { emit(ExploreUiState.Error(UiError.DATABASE)) }
     }.stateIn(
@@ -110,12 +116,7 @@ class ExploreViewModel(
 
     init {
         viewModelScope.launch {
-            val savedVehicle = preferencesRepository.preferences.first().preferredVehicle
-            if (savedVehicle != null) {
-                filters.update { current ->
-                    if (current.vehicle == null) current.copy(vehicle = savedVehicle) else current
-                }
-            }
+            userLocation.value = runCatching { locationSource() }.getOrNull()
         }
     }
 
@@ -124,13 +125,13 @@ class ExploreViewModel(
         selectedTab.value = tab
     }
 
+    /**
+     * El filtro de vehículo del directorio es de sesión: no reescribe la
+     * preferencia persistida que usan Perfil y Mi Ruta.
+     */
     fun toggleVehicleFilter(vehicle: VehicleType) {
         releaseFrozenOrder()
         filters.update { it.toggleVehicle(vehicle) }
-        viewModelScope.launch {
-            val active = filters.value.vehicle
-            runCatching { preferencesRepository.setPreferredVehicle(active) }
-        }
     }
 
     fun toggleEcosystemFilter(ecosystem: Ecosystem) {
@@ -146,9 +147,6 @@ class ExploreViewModel(
     fun clearFilters() {
         releaseFrozenOrder()
         filters.value = DirectoryFilters()
-        viewModelScope.launch {
-            runCatching { preferencesRepository.setPreferredVehicle(null) }
-        }
     }
 
     fun retry() {
@@ -254,6 +252,7 @@ class ExploreViewModel(
             return ExploreUiState.Empty(bundle.tab)
         }
         val affinity = bundle.preferences.affinity
+        val userPoint = bundle.location ?: UserPreferences.DEFAULT_ORIGIN
         val rankedPosts = FeedRanker.rank(bundle.posts, affinity, clock())
         // Un post publicado después del like no existe en el orden congelado:
         // se suelta el congelado para que el ranking lo ubique donde le toca
@@ -267,12 +266,16 @@ class ExploreViewModel(
             rankedPosts.sortedBy { position.getValue(it.id) }
         }
         val feedPosts = orderedPosts.map { post ->
-            FeedPostUi(post = post, affinity = affinity.normalizedFor(post.destination))
+            FeedPostUi(
+                post = post,
+                affinity = affinity.normalizedFor(post.destination),
+                distanceMeters = GeoCalculator.distanceMeters(userPoint, post.destination.parking),
+            )
         }
         val destinationsWithDistance = bundle.destinations.map { destination ->
             DestinationWithDistance(
                 destination = destination,
-                distanceMeters = GeoCalculator.distanceMeters(bundle.preferences.origin, destination.parking),
+                distanceMeters = GeoCalculator.distanceMeters(userPoint, destination.parking),
             )
         }
         val directoryEntries = DirectoryFilter.apply(destinationsWithDistance, bundle.filters)
@@ -329,6 +332,7 @@ class ExploreViewModel(
                     communityRepository = container.communityRepository,
                     collectionRepository = container.collectionRepository,
                     preferencesRepository = container.preferencesRepository,
+                    locationSource = { container.locationProvider.lastKnownLocation() },
                 )
             }
         }

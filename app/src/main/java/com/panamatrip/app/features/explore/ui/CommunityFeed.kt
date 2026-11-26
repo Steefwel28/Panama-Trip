@@ -40,6 +40,7 @@ import com.panamatrip.app.core.designsystem.component.SocialAction
 import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.commentsLabel
+import com.panamatrip.app.core.designsystem.labels.distanceFromYouLabel
 import com.panamatrip.app.core.designsystem.labels.displayName
 import com.panamatrip.app.core.designsystem.labels.elevationLabel
 import com.panamatrip.app.core.designsystem.labels.likesLabel
@@ -147,6 +148,7 @@ private fun CommunityPostCard(
                     .padding(Dimens.overlayPadding),
                 verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
             ) {
+                OverlayTag(text = distanceFromYouLabel(item.distanceMeters))
                 post.activityTag?.let { tag -> OverlayTag(text = tag) }
                 if (post.photoVerified) {
                     OverlayTag(text = stringResource(R.string.post_verified_on_site))

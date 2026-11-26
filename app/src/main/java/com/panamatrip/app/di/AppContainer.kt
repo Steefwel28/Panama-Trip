@@ -6,6 +6,7 @@ import com.panamatrip.app.core.database.DatabaseSeeder
 import com.panamatrip.app.core.database.PanamaTripDatabase
 import com.panamatrip.app.core.datastore.PreferencesStore
 import com.panamatrip.app.core.datastore.panamaTripPreferences
+import com.panamatrip.app.core.location.DeviceLocationProvider
 import com.panamatrip.app.data.repository.CollectionRepositoryImpl
 import com.panamatrip.app.data.repository.CommunityRepositoryImpl
 import com.panamatrip.app.data.repository.DestinationRepositoryImpl
@@ -85,6 +86,8 @@ class AppContainer(context: Context) {
     }
 
     val photoInspector: PhotoInspector by lazy { PhotoInspector(appContext) }
+
+    val locationProvider: DeviceLocationProvider by lazy { DeviceLocationProvider(appContext) }
 
     val trackRecorderController: TrackRecorderController by lazy {
         ServiceTrackRecorderController(appContext)

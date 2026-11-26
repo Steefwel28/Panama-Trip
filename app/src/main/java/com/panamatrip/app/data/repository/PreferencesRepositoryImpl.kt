@@ -17,9 +17,13 @@ class PreferencesRepositoryImpl(
 
     override val affinity: Flow<AffinitySnapshot> = store.preferences.map { it.affinity }
 
+    override val cashAlerts: Flow<Boolean> = store.preferences.map { it.cashAlertsEnabled }
+
     override suspend fun setPreferredVehicle(vehicle: VehicleType?) = store.setPreferredVehicle(vehicle)
 
     override suspend fun setActiveRoute(destinationId: String?) = store.setActiveRoute(destinationId)
+
+    override suspend fun setCashAlertsEnabled(enabled: Boolean) = store.setCashAlertsEnabled(enabled)
 
     override suspend fun recordLike(destination: Destination) =
         store.recordLike(destination.id, destination.ecosystem)

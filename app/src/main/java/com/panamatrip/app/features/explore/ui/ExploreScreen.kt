@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -24,7 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panamatrip.app.R
@@ -33,6 +39,7 @@ import com.panamatrip.app.core.designsystem.component.ErrorState
 import com.panamatrip.app.core.designsystem.component.ScreenLoading
 import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
+import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.ui.LocalSnackbarHostState
@@ -51,7 +58,7 @@ fun ExploreRoute(
     container: AppContainer,
     onOpenDestination: (String) -> Unit,
     onPlanRoute: (String) -> Unit,
-    onOpenSaved: () -> Unit,
+    onOpenRecorder: () -> Unit,
     onNewPost: () -> Unit,
 ) {
     val viewModel: ExploreViewModel = viewModel(factory = ExploreViewModel.factory(container))
@@ -74,7 +81,7 @@ fun ExploreRoute(
         onClearFilters = viewModel::clearFilters,
         onRetry = viewModel::retry,
         onOpenDestination = onOpenDestination,
-        onOpenSaved = onOpenSaved,
+        onOpenRecorder = onOpenRecorder,
         onNewPost = onNewPost,
         onLike = viewModel::toggleLike,
         onOpenComments = viewModel::openComments,
@@ -101,7 +108,7 @@ fun ExploreScreen(
     onClearFilters: () -> Unit,
     onRetry: () -> Unit,
     onOpenDestination: (String) -> Unit,
-    onOpenSaved: () -> Unit,
+    onOpenRecorder: () -> Unit,
     onNewPost: () -> Unit,
     onLike: (CommunityPost) -> Unit,
     onOpenComments: (String) -> Unit,
@@ -115,11 +122,9 @@ fun ExploreScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        val showComposer = (state as? ExploreUiState.Content)?.tab != ExploreTab.DIRECTORY
         ExploreHeader(
             guestMode = (state as? ExploreUiState.Content)?.guestMode ?: true,
-            showComposer = showComposer,
-            onOpenSaved = onOpenSaved,
+            onOpenRecorder = onOpenRecorder,
             onNewPost = onNewPost,
             modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         )
@@ -202,26 +207,29 @@ fun ExploreScreen(
 @Composable
 private fun ExploreHeader(
     guestMode: Boolean,
-    showComposer: Boolean,
-    onOpenSaved: () -> Unit,
+    onOpenRecorder: () -> Unit,
     onNewPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    val haptics = rememberPanamaHaptics()
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.cardPadding, vertical = Dimens.itemGap),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
             Text(
-                text = stringResource(R.string.explore_eyebrow),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.tertiary,
-            )
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
+                text = stringResource(R.string.home_brand),
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-1.6).sp,
+                    fontStyle = FontStyle.Italic,
+                ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -229,26 +237,37 @@ private fun ExploreHeader(
             TonalTag(
                 text = stringResource(R.string.explore_guest_mode),
                 tone = Tone.Neutral,
-                modifier = Modifier.padding(end = Dimens.tightGap),
             )
         }
-        if (showComposer) {
-            IconButton(onClick = onNewPost) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilledTonalIconButton(
+                onClick = {
+                    haptics.confirm()
+                    onOpenRecorder()
+                },
+                modifier = Modifier.size(Dimens.minimumTouchTarget),
+            ) {
                 Icon(
-                    imageVector = PanamaIcons.Plus,
-                    contentDescription = stringResource(R.string.action_new_post),
-                    modifier = Modifier.size(22.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.AutoMirrored.Rounded.DirectionsWalk,
+                    contentDescription = stringResource(R.string.home_recorder_action),
                 )
             }
-        }
-        IconButton(onClick = onOpenSaved) {
-            Icon(
-                imageVector = PanamaIcons.Bookmark,
-                contentDescription = stringResource(R.string.nav_saved),
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
+            FilledIconButton(
+                onClick = {
+                    haptics.confirm()
+                    onNewPost()
+                },
+                modifier = Modifier.size(Dimens.minimumTouchTarget),
+            ) {
+                Icon(
+                    imageVector = PanamaIcons.Plus,
+                    contentDescription = stringResource(R.string.home_compose_action),
+                )
+            }
         }
     }
 }

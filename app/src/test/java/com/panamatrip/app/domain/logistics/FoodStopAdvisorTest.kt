@@ -37,6 +37,25 @@ class FoodStopAdvisorTest {
     }
 
     @Test
+    fun `suggestion exposes its absolute kilometer on the route`() {
+        val suggestions = FoodStopAdvisor.suggest(
+            departureMinuteOfDay = 5 * 60 + 30,
+            driveMinutes = 90,
+            walkMinutes = 30,
+            corridor = FoodCorridor.NORTH,
+            routeKilometers = 120.0,
+        )
+
+        val outbound = suggestions.first { it.leg == RouteLeg.OUTBOUND }
+        assertTrue(outbound.absoluteKilometer > 0.0)
+        assertEquals(
+            120.0 * outbound.stop.progressPercent / 100.0,
+            outbound.absoluteKilometer,
+            0.01,
+        )
+    }
+
+    @Test
     fun `every suggestion respects the requested corridor`() {
         FoodCorridor.entries.forEach { corridor ->
             (1..12).forEach { hour ->

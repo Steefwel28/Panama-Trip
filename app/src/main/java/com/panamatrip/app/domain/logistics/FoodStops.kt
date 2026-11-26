@@ -50,6 +50,8 @@ data class FoodStopSuggestion(
     val leg: RouteLeg,
     val clockMinuteOfDay: Int,
     val elapsedMinutes: Int,
+    /** Kilómetro absoluto del trayecto de ida donde cae la parada. */
+    val absoluteKilometer: Double = 0.0,
 )
 
 object FoodStopCatalog {
@@ -179,17 +181,19 @@ object FoodStopAdvisor {
         driveMinutes: Int,
         walkMinutes: Int,
         corridor: FoodCorridor,
+        routeKilometers: Double = 0.0,
     ): List<FoodStopSuggestion> {
         val rawDeparture = departureMinuteOfDay % MINUTES_PER_DAY
         val departure = (rawDeparture + MINUTES_PER_DAY) % MINUTES_PER_DAY
         val safeDrive = driveMinutes.coerceAtLeast(0)
         val safeWalk = walkMinutes.coerceAtLeast(0)
+        val safeKilometers = routeKilometers.coerceAtLeast(0.0)
 
         return FoodStopCatalog.stops
             .asSequence()
             .filter { it.corridor == corridor }
             .mapNotNull { stop ->
-                candidates(stop, departure, safeDrive, safeWalk)
+                candidates(stop, departure, safeDrive, safeWalk, safeKilometers)
                     .filter { it.matchesWindow() }
                     .minByOrNull { it.elapsedMinutes }
             }
@@ -203,6 +207,7 @@ object FoodStopAdvisor {
         departureMinute: Int,
         driveMinutes: Int,
         walkMinutes: Int,
+        routeKilometers: Double,
     ): List<FoodStopSuggestion> {
         val outboundElapsed =
             (driveMinutes.toDouble() * stop.progressPercent / PERCENT_BASE).toInt()
@@ -215,12 +220,14 @@ object FoodStopAdvisor {
                 leg = RouteLeg.OUTBOUND,
                 clockMinuteOfDay = (departureMinute + outboundElapsed) % MINUTES_PER_DAY,
                 elapsedMinutes = outboundElapsed,
+                absoluteKilometer = routeKilometers * stop.progressPercent / PERCENT_BASE,
             ),
             FoodStopSuggestion(
                 stop = stop,
                 leg = RouteLeg.RETURN,
                 clockMinuteOfDay = (departureMinute + returnElapsed) % MINUTES_PER_DAY,
                 elapsedMinutes = returnElapsed,
+                absoluteKilometer = routeKilometers * stop.progressPercent / PERCENT_BASE,
             ),
         )
     }

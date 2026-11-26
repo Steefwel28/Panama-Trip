@@ -73,6 +73,16 @@ fun distanceLabel(meters: Int): String = if (meters < METERS_PER_KILOMETER) {
 }
 
 @Composable
+fun distanceFromYouLabel(meters: Int): String = if (meters < METERS_PER_KILOMETER) {
+    stringResource(R.string.distance_from_you_meters, meters)
+} else {
+    stringResource(
+        R.string.distance_from_you_kilometers,
+        (meters + METERS_PER_KILOMETER / 2) / METERS_PER_KILOMETER,
+    )
+}
+
+@Composable
 fun walkLabel(meters: Int, minutes: Int): String =
     stringResource(R.string.walk_summary, distanceLabel(meters), minutes)
 

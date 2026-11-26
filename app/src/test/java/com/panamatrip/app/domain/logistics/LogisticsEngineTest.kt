@@ -74,6 +74,15 @@ class LogisticsEngineTest {
     }
 
     @Test
+    fun `panama este access charges no tolls`() {
+        val plan = LogisticsEngine.plan(input(destinationOf("cerro-azul")))
+
+        assertEquals(0, plan.tollRoundTripCents)
+        assertEquals(0, plan.cashOnlyRoundTripCents)
+        assertTrue(plan.tollSegments.isEmpty())
+    }
+
+    @Test
     fun `surcharge changes the fuel estimate but not the tolls`() {
         val destination = destinationOf("los-picachos-de-ola")
         val base = LogisticsEngine.plan(input(destination, mountainSurcharge = false))

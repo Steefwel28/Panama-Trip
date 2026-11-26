@@ -1,5 +1,7 @@
 package com.panamatrip.app.domain.logistics
 
+import com.panamatrip.app.domain.model.GeoPoint
+
 /** Medio de pago aceptado en un tramo de peaje panameño. */
 enum class TollPayment {
     PANAPASS,
@@ -47,6 +49,17 @@ object TollCatalog {
             listOf(ARRAIJAN_LA_CHORRERA)
         else -> emptyList()
     }
+
+    /**
+     * Filtro por corredor real: los accesos al este de la capital (Cerro Azul)
+     * no cruzan casetas, aunque compartan la provincia de Panamá.
+     */
+    fun segmentsFor(province: String, parking: GeoPoint): List<TollSegment> =
+        if (CorridorCatalog.of(province, parking) == PanamanianCorridor.EAST_HILLS) {
+            emptyList()
+        } else {
+            segmentsFor(province)
+        }
 
     fun roundTripCents(segments: List<TollSegment>): Int =
         segments.sumOf { it.oneWayCents } * DIRECTIONS_PER_TRIP

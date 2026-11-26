@@ -44,25 +44,31 @@ data class LogisticsPlan(
 object LogisticsEngine {
 
     private const val MINUTES_PER_DAY = 24 * 60
+    private const val METERS_PER_KILOMETER = 1_000.0
 
     fun plan(input: LogisticsInput): LogisticsPlan {
         val oneWayDistance = GeoCalculator.distanceMeters(input.origin, input.destination.parking)
         val oneWayRoadMeters = GeoCalculator.roadDistanceMeters(oneWayDistance)
-        val driveMinutes = GeoCalculator.estimatedDriveMinutes(oneWayDistance)
+        val corridor = CorridorCatalog.of(input.destination.province, input.destination.parking)
+        val driveMinutes = GeoCalculator.estimatedDriveMinutes(oneWayDistance, corridor)
         val fuel = FuelCalculator.estimate(
             oneWayRoadMeters = oneWayRoadMeters,
             vehicle = input.vehicle,
             fuelType = input.fuelType,
             mountainSurcharge = input.mountainSurcharge,
         )
-        val tollSegments = TollCatalog.segmentsFor(input.destination.province)
+        val tollSegments = TollCatalog.segmentsFor(
+            province = input.destination.province,
+            parking = input.destination.parking,
+        )
         val weather = WeatherAdvisor.outlookFor(input.destination.ecosystem, input.month)
-        val corridor = FoodStopCatalog.corridorFor(input.destination.province)
+        val foodCorridor = FoodStopCatalog.corridorFor(input.destination.province)
         val foodStops = FoodStopAdvisor.suggest(
             departureMinuteOfDay = input.departureMinuteOfDay,
             driveMinutes = driveMinutes,
             walkMinutes = input.destination.walkMinutes,
-            corridor = corridor,
+            corridor = foodCorridor,
+            routeKilometers = oneWayRoadMeters / METERS_PER_KILOMETER,
         )
 
         return LogisticsPlan(

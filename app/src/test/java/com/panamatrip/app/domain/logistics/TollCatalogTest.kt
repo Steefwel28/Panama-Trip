@@ -3,6 +3,7 @@ package com.panamatrip.app.domain.logistics
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.panamatrip.app.domain.model.GeoPoint
 
 class TollCatalogTest {
 
@@ -33,6 +34,13 @@ class TollCatalogTest {
         assertTrue(TollCatalog.segmentsFor("Panamá").isEmpty())
         assertTrue(TollCatalog.segmentsFor("Darién").isEmpty())
         assertEquals(0, TollCatalog.roundTripCents(emptyList()))
+    }
+
+    @Test
+    fun `east panama access skips the toll booths`() {
+        assertTrue(
+            TollCatalog.segmentsFor("Panamá", GeoPoint(9.1682, -79.4215)).isEmpty(),
+        )
     }
 
     @Test

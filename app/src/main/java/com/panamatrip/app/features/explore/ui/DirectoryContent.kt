@@ -42,6 +42,7 @@ import com.panamatrip.app.core.designsystem.component.VehicleAccessDots
 import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.displayName
+import com.panamatrip.app.core.designsystem.labels.distanceFromYouLabel
 import com.panamatrip.app.core.designsystem.labels.distanceLabel
 import com.panamatrip.app.core.designsystem.labels.driveLabel
 import com.panamatrip.app.core.designsystem.labels.elevationLabel
@@ -266,7 +267,7 @@ private fun DestinationRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = distanceLabel(entry.distanceMeters),
+                        text = distanceFromYouLabel(entry.distanceMeters),
                         style = MetricType.Small,
                         color = MaterialTheme.colorScheme.onSurface,
                     )

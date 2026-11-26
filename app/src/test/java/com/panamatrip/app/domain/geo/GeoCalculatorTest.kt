@@ -1,6 +1,7 @@
 package com.panamatrip.app.domain.geo
 
 import com.panamatrip.app.domain.model.GeoPoint
+import com.panamatrip.app.domain.logistics.PanamanianCorridor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -28,6 +29,18 @@ class GeoCalculatorTest {
     fun `drive estimate is never below one minute`() {
         val point = GeoPoint(8.6421, -79.9538)
         assertEquals(1, GeoCalculator.estimatedDriveMinutes(GeoCalculator.distanceMeters(point, point)))
+    }
+
+    @Test
+    fun `corridor speed calibrates the drive estimate`() {
+        val distance = 60_000
+        val metro = GeoCalculator.estimatedDriveMinutes(distance, PanamanianCorridor.METRO)
+        val highway = GeoCalculator.estimatedDriveMinutes(
+            distance,
+            PanamanianCorridor.COLON_HIGHWAY,
+        )
+
+        assertTrue(highway < metro)
     }
 
     @Test

@@ -16,6 +16,7 @@ import com.panamatrip.app.domain.logistics.LogisticsEngine
 import com.panamatrip.app.domain.logistics.LogisticsInput
 import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.model.Destination
+import com.panamatrip.app.domain.model.GeoPoint
 import com.panamatrip.app.domain.repository.DestinationRepository
 import com.panamatrip.app.domain.repository.PreferencesRepository
 import com.panamatrip.app.domain.repository.RoutePlanRepository
@@ -31,7 +32,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -44,6 +47,7 @@ class RoutePlanViewModel(
     private val destinationRepository: DestinationRepository,
     private val preferencesRepository: PreferencesRepository,
     private val routePlanRepository: RoutePlanRepository,
+    private val locationSource: suspend () -> GeoPoint? = { null },
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
@@ -53,6 +57,9 @@ class RoutePlanViewModel(
     private val fuelOverride = MutableStateFlow<FuelType?>(null)
     private val surchargeOverride = MutableStateFlow<Boolean?>(null)
     private val departureWindow = MutableStateFlow(DepartureWindow.DAWN)
+    private val originMode = MutableStateFlow(OriginMode.CUSTOM)
+    private val gpsLocation = MutableStateFlow<GeoPoint?>(null)
+    private var lastDestinationId: String? = null
 
     private val noticeChannel = MutableSharedFlow<UiNotice>(
         extraBufferCapacity = NOTICE_BUFFER,
@@ -82,6 +89,44 @@ class RoutePlanViewModel(
 
     init {
         requestedDestinationId?.let(::persistRoute)
+        viewModelScope.launch {
+            combine(
+                destinationRepository.observeDestinations(),
+                preferencesRepository.preferences,
+            ) { destinations, preferences ->
+                requestedDestinationId ?: preferences.activeRouteDestinationId
+            }
+                .distinctUntilChanged()
+                .collect { destinationId ->
+                    if (lastDestinationId != null && lastDestinationId != destinationId) {
+                        resetTransientSelection()
+                    }
+                    lastDestinationId = destinationId
+                }
+        }
+    }
+
+    fun selectOrigin(mode: OriginMode) {
+        originMode.value = mode
+        if (mode == OriginMode.CURRENT_LOCATION && gpsLocation.value == null) {
+            viewModelScope.launch {
+                val point = runCatching { locationSource() }.getOrNull()
+                if (point == null) {
+                    originMode.value = OriginMode.CUSTOM
+                    noticeChannel.tryEmit(UiNotice.LOCATION_DENIED)
+                } else {
+                    gpsLocation.value = point
+                }
+            }
+        }
+    }
+
+    private fun resetTransientSelection() {
+        fuelOverride.value = null
+        surchargeOverride.value = null
+        departureWindow.value = DepartureWindow.DAWN
+        originMode.value = OriginMode.CUSTOM
+        gpsLocation.value = null
     }
 
     fun selectFuel(fuelType: FuelType) {
@@ -128,8 +173,20 @@ class RoutePlanViewModel(
     ): Flow<RoutePlanUiState> {
         val vehicle = preferences.preferredVehicle ?: destination.recommendedVehicle
         val suggestedSurcharge = LogisticsEngine.suggestsMountainSurcharge(destination)
-        val selection = combine(fuelOverride, surchargeOverride, departureWindow) { fuel, surcharge, window ->
-            PlanSelection(fuel = fuel, surcharge = surcharge, window = window)
+        val selection = combine(
+            fuelOverride,
+            surchargeOverride,
+            departureWindow,
+            originMode,
+            gpsLocation,
+        ) { fuel, surcharge, window, mode, gps ->
+            PlanSelection(
+                fuel = fuel,
+                surcharge = surcharge,
+                window = window,
+                originMode = mode,
+                gps = gps,
+            )
         }
 
         return combine(
@@ -138,9 +195,14 @@ class RoutePlanViewModel(
         ) { savedPlans, current ->
             val fuel = current.fuel ?: DEFAULT_FUEL
             val surcharge = current.surcharge ?: suggestedSurcharge
+            val origin = if (current.originMode == OriginMode.CURRENT_LOCATION) {
+                current.gps ?: preferences.origin
+            } else {
+                preferences.origin
+            }
             val plan = LogisticsEngine.plan(
                 LogisticsInput(
-                    origin = preferences.origin,
+                    origin = origin,
                     destination = destination,
                     vehicle = vehicle,
                     fuelType = fuel,
@@ -151,10 +213,13 @@ class RoutePlanViewModel(
             )
             RoutePlanUiState.Content(
                 destination = destination,
+                origin = origin,
+                originMode = current.originMode,
                 vehicle = vehicle,
                 fuelType = fuel,
                 surchargeEnabled = surcharge,
                 departureWindow = current.window,
+                cashAlertsEnabled = preferences.cashAlertsEnabled,
                 plan = plan,
                 savedPlans = savedPlans.map { it.toUi() },
             )
@@ -197,6 +262,8 @@ class RoutePlanViewModel(
         val fuel: FuelType?,
         val surcharge: Boolean?,
         val window: DepartureWindow,
+        val originMode: OriginMode,
+        val gps: GeoPoint?,
     )
 
     companion object {
@@ -213,6 +280,7 @@ class RoutePlanViewModel(
                     destinationRepository = container.destinationRepository,
                     preferencesRepository = container.preferencesRepository,
                     routePlanRepository = container.routePlanRepository,
+                    locationSource = { container.locationProvider.lastKnownLocation() },
                 )
             }
         }

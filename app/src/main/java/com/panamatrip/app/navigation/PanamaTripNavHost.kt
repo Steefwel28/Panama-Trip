@@ -7,6 +7,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -42,6 +45,7 @@ import com.panamatrip.app.features.destinationdetail.ui.DestinationDetailRoute
 import com.panamatrip.app.features.explore.ui.ExploreRoute
 import com.panamatrip.app.features.guides.ui.GuidesRoute
 import com.panamatrip.app.features.postcomposer.ui.PostComposerRoute
+import com.panamatrip.app.features.profile.ui.ProfileRoute
 import com.panamatrip.app.features.routeplan.ui.RoutePlanRoute
 import com.panamatrip.app.features.saved.ui.SavedRoute
 import com.panamatrip.app.features.trackrecorder.ui.TrackRecorderRoute
@@ -50,6 +54,7 @@ object Routes {
     const val EXPLORE = "explore"
     const val SAVED = "saved"
     const val GUIDES = "guides"
+    const val PROFILE = "profile"
     const val ROUTE = "route?destinationId={destinationId}"
     const val ROUTE_BASE = "route"
     const val DESTINATION_DETAIL = "destination/{destinationId}"
@@ -76,19 +81,19 @@ private data class BottomTab(
 )
 
 private val bottomTabs = listOf(
-    BottomTab(Routes.EXPLORE, R.string.nav_explore, PanamaIcons.Compass, PanamaIcons.Compass),
+    BottomTab(Routes.EXPLORE, R.string.nav_explore, Icons.Rounded.Home, Icons.Rounded.Home),
     BottomTab(Routes.ROUTE_BASE, R.string.nav_route, PanamaIcons.Route, PanamaIcons.Route),
-    BottomTab(
-        Routes.SAVED,
-        R.string.nav_saved,
-        PanamaIcons.BookmarkOutline,
-        PanamaIcons.Bookmark,
-    ),
     BottomTab(
         Routes.GUIDES,
         R.string.nav_guides,
         PanamaIcons.Verified,
         PanamaIcons.Verified,
+    ),
+    BottomTab(
+        Routes.PROFILE,
+        R.string.nav_profile,
+        Icons.Rounded.Person,
+        Icons.Rounded.Person,
     ),
 )
 
@@ -138,7 +143,7 @@ fun PanamaTripApp(container: AppContainer) {
                     container = container,
                     onOpenDestination = { id -> navController.navigate(Routes.destination(id)) },
                     onPlanRoute = { id -> navController.navigate(Routes.route(id)) },
-                    onOpenSaved = { navController.navigateToTab(Routes.SAVED) },
+                    onOpenRecorder = { navController.navigate(Routes.trackRecorder()) },
                     onNewPost = { navController.navigate(Routes.POST_COMPOSER) },
                 )
             }
@@ -181,6 +186,13 @@ fun PanamaTripApp(container: AppContainer) {
             }
             composable(Routes.GUIDES) {
                 GuidesRoute(container = container)
+            }
+            composable(Routes.PROFILE) {
+                ProfileRoute(
+                    container = container,
+                    onOpenDestination = { id -> navController.navigate(Routes.destination(id)) },
+                    onExplore = { navController.navigateToTab(Routes.EXPLORE) },
+                )
             }
             composable(
                 route = Routes.TRACK_RECORDER,
@@ -252,7 +264,7 @@ private fun NavHostController.navigateToTab(route: String) {
 
 private fun isTopLevelRoute(route: String): Boolean =
     route == Routes.EXPLORE ||
-        route == Routes.SAVED ||
+        route == Routes.PROFILE ||
         route == Routes.GUIDES ||
         route.startsWith(Routes.ROUTE_BASE)
 

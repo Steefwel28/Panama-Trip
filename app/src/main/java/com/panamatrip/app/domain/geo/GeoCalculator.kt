@@ -1,5 +1,6 @@
 package com.panamatrip.app.domain.geo
 
+import com.panamatrip.app.domain.logistics.PanamanianCorridor
 import com.panamatrip.app.domain.model.GeoPoint
 import kotlin.math.asin
 import kotlin.math.cos
@@ -44,11 +45,15 @@ object GeoCalculator {
 
     /**
      * Estimación vial gruesa: la distancia en línea recta se corrige por un
-     * factor de sinuosidad de carretera y una velocidad media conservadora.
+     * factor de sinuosidad de carretera y la velocidad media del corredor.
      */
-    fun estimatedDriveMinutes(distanceMeters: Int): Int {
+    fun estimatedDriveMinutes(
+        distanceMeters: Int,
+        corridor: PanamanianCorridor = PanamanianCorridor.METRO,
+    ): Int {
         val roadMeters = distanceMeters * ROAD_SINUOSITY
-        return (roadMeters / AVERAGE_DRIVE_SPEED_METERS_PER_MINUTE).toInt().coerceAtLeast(1)
+        val metersPerMinute = corridor.averageSpeedKmh * METERS_PER_HOUR / MINUTES_PER_HOUR
+        return (roadMeters / metersPerMinute).toInt().coerceAtLeast(1)
     }
 
     /**
@@ -60,7 +65,8 @@ object GeoCalculator {
         (distanceMeters.coerceAtLeast(0) * ROAD_SINUOSITY).toInt()
 
     private const val ROAD_SINUOSITY = 1.35
-    private const val AVERAGE_DRIVE_SPEED_METERS_PER_MINUTE = 650.0
+    private const val METERS_PER_HOUR = 1000.0
+    private const val MINUTES_PER_HOUR = 60.0
 
     /** Convertidor de respaldo para entradas manuales de coordenadas. */
     fun fromDegreesMinutes(latitude: String, longitude: String): GeoPoint? = runCatching {

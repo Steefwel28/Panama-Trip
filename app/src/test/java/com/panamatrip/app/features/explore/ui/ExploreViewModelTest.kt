@@ -132,6 +132,19 @@ class ExploreViewModelTest {
         )
     }
 
+    @Test
+    fun `el feed etiqueta la distancia real desde la ubicacion del dispositivo`() = runTest {
+        val viewModel = createViewModel(location = GeoPoint(8.55, -82.5))
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        val content = viewModel.state.value as ExploreUiState.Content
+        val distances = content.posts.map { it.distanceMeters }
+        assertTrue(distances.all { it in 5_000..5_700 })
+        // El directorio usa el mismo origen, no la preferencia guardada.
+        assertTrue(content.directory.all { it.distanceMeters in 5_000..5_700 })
+    }
+
     private fun TestScope.startCollecting(viewModel: ExploreViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -140,6 +153,7 @@ class ExploreViewModelTest {
 
     private fun createViewModel(
         communityRepository: CommunityRepository = FakeCommunityRepository(defaultPosts()),
+        location: GeoPoint? = null,
     ): ExploreViewModel {
         val oldest = destination(id = "oldest", ecosystem = Ecosystem.MOUNTAIN)
         val newest = destination(id = "newest", ecosystem = Ecosystem.WATERFALL)
@@ -148,6 +162,7 @@ class ExploreViewModelTest {
             communityRepository = communityRepository,
             collectionRepository = FakeCollectionRepository(),
             preferencesRepository = FakePreferencesRepository(),
+            locationSource = { location },
             clock = { now },
         )
     }

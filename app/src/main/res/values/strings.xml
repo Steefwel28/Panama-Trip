@@ -3,13 +3,14 @@
     <string name="app_name">Panama-Trip</string>
 
     <!-- Navegación -->
-    <string name="nav_explore">Explorar</string>
+    <string name="nav_explore">Inicio</string>
     <string name="nav_route">Mi Ruta</string>
     <string name="nav_saved">Guardados</string>
     <string name="nav_guides">Guías</string>
 
+    <string name="nav_profile">Perfil</string>
+
     <!-- Explorar -->
-    <string name="explore_eyebrow">EXPLORACIÓN NATURAL</string>
     <string name="explore_guest_mode">Modo invitado</string>
     <string name="explore_tab_community">Comunidad</string>
     <string name="explore_tab_directory">Directorio</string>
@@ -42,7 +43,7 @@
     <string name="directory_vehicle_question">¿En qué carro vas?</string>
     <string name="directory_distance_near">A menos de 15 km</string>
     <string name="directory_distance_mid">A menos de 60 km</string>
-    <string name="directory_distance_origin">Distancias calculadas desde Ciudad de Panamá.</string>
+    <string name="directory_distance_origin">Distancias calculadas desde tu ubicación (o Ciudad de Panamá sin GPS).</string>
     <string name="directory_clear_filters">Limpiar filtros</string>
     <string name="directory_empty_title">Ningún destino con esos filtros</string>
     <string name="directory_empty_body">Prueba otro vehículo, ecosistema o amplía el radio de distancia.</string>
@@ -341,4 +342,52 @@
 
     <!-- Formato de grabación -->
     <string name="speed_kmh">%1$.1f km/h</string>
+
+    <!-- Inicio: cabecera de marca y acciones rápidas -->
+    <string name="home_brand">PanamaTrip</string>
+    <string name="home_recorder_action">Abrir grabador de rutas GPS</string>
+    <string name="home_compose_action">Nueva publicación</string>
+    <string name="distance_from_you_meters">A %1$d m de ti</string>
+    <string name="distance_from_you_kilometers">A %1$d km de ti</string>
+
+    <!-- Perfil -->
+    <string name="profile_eyebrow">TU MOCHILA</string>
+    <string name="profile_title">Perfil</string>
+    <string name="profile_menu">Abrir ajustes</string>
+    <string name="profile_guest_mode">Sesión de invitado</string>
+    <string name="profile_stat_kilometers">Km recorridos</string>
+    <string name="profile_stat_elevation">Desnivel</string>
+    <string name="profile_stat_routes">Rutas</string>
+    <string name="profile_tab_posts">Publicaciones</string>
+    <string name="profile_tab_routes">Mis Rutas</string>
+    <string name="profile_tab_saved">Guardados</string>
+    <string name="profile_tab_likes">Me gusta</string>
+    <string name="profile_posts_empty_title">Aún no publicas nada</string>
+    <string name="profile_posts_empty_body">Comparte tu primera expedición desde el botón (+) de Inicio y aparecerá aquí.</string>
+    <string name="profile_routes_empty_title">Sin rutas grabadas</string>
+    <string name="profile_routes_empty_body">Abre el grabador GPS y registra una caminata para sumar kilómetros y desnivel.</string>
+    <string name="profile_likes_empty_title">Sin me gusta todavía</string>
+    <string name="profile_likes_empty_body">Marca el corazón en el feed y guarda aquí las expediciones que quieres repetir.</string>
+    <string name="profile_route_meta">%1$s · %2$s</string>
+    <string name="profile_route_free">Ruta libre</string>
+    <string name="profile_likes_count">%1$d me gusta</string>
+    <string name="profile_open_destination">Abrir destino</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_vehicle_title">Vehículo predeterminado</string>
+    <string name="settings_vehicle_body">Mi Ruta toma este vehículo al abrir un destino. El filtro del directorio queda aparte.</string>
+    <string name="settings_cash_title">Avisos de efectivo</string>
+    <string name="settings_cash_body">Muestra la alerta cuando el corredor solo acepta efectivo en la caseta.</string>
+    <string name="settings_offline_title">Datos offline</string>
+    <string name="settings_offline_body">Kilómetros, peajes y paradas quedan guardados en el teléfono para consultarlos sin señal.</string>
+
+    <!-- Mi Ruta: origen -->
+    <string name="route_origin_selector_title">Punto de salida</string>
+    <string name="route_origin_current">Mi ubicación</string>
+    <string name="route_origin_custom">Punto guardado</string>
+    <string name="route_origin_gps_unavailable">No pudimos leer el GPS; usamos tu punto guardado.</string>
+    <string name="route_origin_current_value">GPS · %1$s</string>
+    <string name="route_origin_custom_value">Guardado · %1$s</string>
+    <string name="route_food_km">Km %1$d</string>
 </resources>

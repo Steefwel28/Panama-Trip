@@ -15,6 +15,8 @@
    Do instead: usar `PanamaMotion.spatial()/bouncy()` (springs propios) en `Theme.kt`; no intentar `MotionScheme.expressive()` hasta subir material3.
 4. **[2026-11-24] Room no tiene tests instrumentados**
    Do instead: verificar migraciones comparando `app/schemas/.../N.json` con el SQL de `Migration` (createSql debe coincidir carácter por carácter).
+5. **[2026-11-25] Iconos Material extendidos ya están en el catálogo**
+   Do instead: usar `libs.androidx.compose.material.icons.extended` para `Icons.AutoMirrored.Rounded.DirectionsWalk`, `Home` o `Person`; no dibujar vectores nuevos en `PanamaIcons`.
 
 ## Shell & Command Reliability
 1. **[2026-11-24] Salida de Gradle en PowerShell marca "NativeCommandError" aunque compile**
@@ -33,6 +35,8 @@
    Do instead: un único consumidor de `Channel<PersistenceCommand>` en `persistenceScope` (orden cabecera→lotes→cierre); `TrackRecorderEngine` fija `TrackPoint.sequence = points.size`; jamás `countPoints()` al insertar.
 6. **[2026-11-25] `RecorderSession.Active` debe exponer `trackId`**
    Do instead: la UI excluye ese id de `findResumable()` y publica `Idle` solo desde el escritor tras guardar/descartar; usa `stopSelf(lastStartId)`.
+7. **[2026-11-25] Ubicación y preferencias no se mezclan**
+   Do instead: leer GPS con `DeviceLocationProvider` (sin pedir permiso, fallback `UserPreferences.DEFAULT_ORIGIN`); el filtro de vehículo del directorio es solo de sesión y `preferredVehicle` se edita en Perfil/Mi Ruta.
 
 ## User Directives
 1. **[2026-11-24] Material 3 Expressive puro**

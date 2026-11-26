@@ -65,6 +65,7 @@ import com.panamatrip.app.domain.logistics.WeatherOutlook
 import com.panamatrip.app.domain.model.Destination
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 @Composable
@@ -109,6 +110,67 @@ internal fun ParkingMapPanel(destination: Destination) {
                 text = destination.parking.formatted,
                 style = MetricType.Small,
                 color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun OriginSelector(
+    content: RoutePlanUiState.Content,
+    onSelectOrigin: (OriginMode) -> Unit,
+) {
+    val haptics = rememberPanamaHaptics()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.tonalElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.itemGap),
+        ) {
+            Text(
+                text = stringResource(R.string.route_origin_selector_title),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+            val options = OriginMode.entries
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                options.forEachIndexed { index, mode ->
+                    SegmentedButton(
+                        selected = content.originMode == mode,
+                        onClick = {
+                            haptics.segment()
+                            onSelectOrigin(mode)
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                        label = {
+                            Text(
+                                text = stringResource(
+                                    when (mode) {
+                                        OriginMode.CURRENT_LOCATION ->
+                                            R.string.route_origin_current
+                                        OriginMode.CUSTOM -> R.string.route_origin_custom
+                                    },
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
+            Text(
+                text = stringResource(
+                    if (content.originMode == OriginMode.CURRENT_LOCATION) {
+                        R.string.route_origin_current_value
+                    } else {
+                        R.string.route_origin_custom_value
+                    },
+                    content.origin.formatted,
+                ),
+                style = MetricType.Small,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -417,7 +479,7 @@ private fun FuelStat(
 }
 
 @Composable
-internal fun TollSection(plan: LogisticsPlan) {
+internal fun TollSection(plan: LogisticsPlan, showCashAlert: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.itemGap)) {
         if (plan.tollSegments.isEmpty()) {
             InfoNotice(
@@ -427,7 +489,7 @@ internal fun TollSection(plan: LogisticsPlan) {
             return@Column
         }
 
-        if (plan.cashOnlyRoundTripCents > 0) {
+        if (showCashAlert && plan.cashOnlyRoundTripCents > 0) {
             CashOnlyAlert(plan = plan)
         }
 
@@ -668,6 +730,14 @@ private fun FoodStopCard(suggestion: FoodStopSuggestion) {
                 Text(
                     text = stop.town,
                     style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.route_food_km,
+                        suggestion.absoluteKilometer.roundToInt(),
+                    ),
+                    style = MetricType.Small,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(

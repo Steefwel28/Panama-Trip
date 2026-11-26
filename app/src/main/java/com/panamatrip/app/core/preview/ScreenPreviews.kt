@@ -43,7 +43,7 @@ private fun ExplorePreview(tab: ExploreTab) {
         onClearFilters = {},
         onRetry = {},
         onOpenDestination = {},
-        onOpenSaved = {},
+        onOpenRecorder = {},
         onNewPost = {},
         onLike = {},
         onOpenComments = {},
@@ -165,6 +165,7 @@ private fun RoutePreview() {
         onSelectFuel = {},
         onSetSurcharge = {},
         onSelectDeparture = {},
+        onSelectOrigin = {},
         onSavePlan = {},
         onOpenRecorder = {},
     )

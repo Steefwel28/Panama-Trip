@@ -27,6 +27,7 @@ import com.panamatrip.app.features.explore.ui.FeedPostUi
 import com.panamatrip.app.features.guides.ui.GuideDestinationFilterUi
 import com.panamatrip.app.features.guides.ui.GuidesUiState
 import com.panamatrip.app.features.routeplan.ui.DepartureWindow
+import com.panamatrip.app.features.routeplan.ui.OriginMode
 import com.panamatrip.app.features.routeplan.ui.RoutePlanUiState
 import com.panamatrip.app.features.routeplan.ui.SavedPlanUi
 import com.panamatrip.app.features.saved.ui.SavedCollectionUi
@@ -141,7 +142,7 @@ object PreviewFixtures {
         val origin = GeoPoint(8.9824, -79.5199)
         return ExploreUiState.Content(
             tab = tab,
-            posts = posts.map { FeedPostUi(post = it, affinity = 0.35f) },
+            posts = posts.map { FeedPostUi(post = it, affinity = 0.35f, distanceMeters = 42_000) },
             directory = destinations.map { destination ->
                 val distance = GeoCalculator.distanceMeters(origin, destination.parking)
                 DirectoryEntryUi(
@@ -203,10 +204,13 @@ object PreviewFixtures {
         )
         return RoutePlanUiState.Content(
             destination = destination,
+            origin = origin,
+            originMode = OriginMode.CUSTOM,
             vehicle = VehicleType.SUV,
             fuelType = FuelType.GASOLINE_95,
             surchargeEnabled = true,
             departureWindow = DepartureWindow.DAWN,
+            cashAlertsEnabled = true,
             plan = plan,
             savedPlans = listOf(savedPlan),
         )

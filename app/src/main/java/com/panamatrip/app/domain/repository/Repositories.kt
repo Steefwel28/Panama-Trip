@@ -16,6 +16,7 @@ import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.affinity.AffinitySnapshot
 import com.panamatrip.app.core.datastore.UserPreferences
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface DestinationRepository {
     fun observeDestinations(): Flow<List<Destination>>
@@ -47,8 +48,10 @@ interface CollectionRepository {
 interface PreferencesRepository {
     val preferences: Flow<UserPreferences>
     val affinity: Flow<AffinitySnapshot>
+    val cashAlerts: Flow<Boolean> get() = preferences.map { it.cashAlertsEnabled }
     suspend fun setPreferredVehicle(vehicle: VehicleType?)
     suspend fun setActiveRoute(destinationId: String?)
+    suspend fun setCashAlertsEnabled(enabled: Boolean) = Unit
     suspend fun recordLike(destination: com.panamatrip.app.domain.model.Destination)
     suspend fun recordSave(destination: com.panamatrip.app.domain.model.Destination)
     suspend fun recordView(destination: com.panamatrip.app.domain.model.Destination)

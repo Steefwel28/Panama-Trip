@@ -21,6 +21,7 @@ data class UserPreferences(
     val preferredVehicle: VehicleType? = null,
     val origin: GeoPoint = DEFAULT_ORIGIN,
     val activeRouteDestinationId: String? = null,
+    val cashAlertsEnabled: Boolean = true,
     val affinity: AffinitySnapshot = AffinitySnapshot(),
 ) {
     companion object {
@@ -41,6 +42,7 @@ class PreferencesStore(private val dataStore: DataStore<Preferences>) {
                 ?.let { runCatching { VehicleType.valueOf(it) }.getOrNull() },
             origin = readOrigin(prefs),
             activeRouteDestinationId = prefs[KEY_ACTIVE_ROUTE],
+            cashAlertsEnabled = prefs[KEY_CASH_ALERTS] ?: true,
             affinity = AffinityCodec.decodeSnapshot(
                 destinationScores = prefs[KEY_AFFINITY_DESTINATIONS],
                 ecosystemScores = prefs[KEY_AFFINITY_ECOSYSTEMS],
@@ -61,6 +63,10 @@ class PreferencesStore(private val dataStore: DataStore<Preferences>) {
             if (destinationId == null) prefs.remove(KEY_ACTIVE_ROUTE)
             else prefs[KEY_ACTIVE_ROUTE] = destinationId
         }
+    }
+
+    suspend fun setCashAlertsEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_CASH_ALERTS] = enabled }
     }
 
     suspend fun recordInteraction(destinationId: String, ecosystem: Ecosystem, weight: Double) {
@@ -100,6 +106,7 @@ class PreferencesStore(private val dataStore: DataStore<Preferences>) {
         val KEY_ORIGIN_LATITUDE = stringPreferencesKey("origin_latitude")
         val KEY_ORIGIN_LONGITUDE = stringPreferencesKey("origin_longitude")
         val KEY_ACTIVE_ROUTE = stringPreferencesKey("active_route_destination_id")
+        val KEY_CASH_ALERTS = booleanPreferencesKey("cash_alerts_enabled")
         val KEY_AFFINITY_DESTINATIONS = stringPreferencesKey("affinity_destinations")
         val KEY_AFFINITY_ECOSYSTEMS = stringPreferencesKey("affinity_ecosystems")
         val KEY_AFFINITY_INTERACTIONS = intPreferencesKey("affinity_interactions")

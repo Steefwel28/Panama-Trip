@@ -81,6 +81,7 @@ fun RoutePlanRoute(
         onSelectFuel = viewModel::selectFuel,
         onSetSurcharge = viewModel::setSurcharge,
         onSelectDeparture = viewModel::selectDeparture,
+        onSelectOrigin = viewModel::selectOrigin,
         onSavePlan = viewModel::saveCurrentPlan,
         onOpenRecorder = onOpenRecorder,
     )
@@ -96,6 +97,7 @@ fun RoutePlanScreen(
     onSelectFuel: (FuelType) -> Unit,
     onSetSurcharge: (Boolean) -> Unit,
     onSelectDeparture: (DepartureWindow) -> Unit,
+    onSelectOrigin: (OriginMode) -> Unit,
     onSavePlan: () -> Unit,
     onOpenRecorder: (String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -129,6 +131,7 @@ fun RoutePlanScreen(
                     onSelectFuel = onSelectFuel,
                     onSetSurcharge = onSetSurcharge,
                     onSelectDeparture = onSelectDeparture,
+                    onSelectOrigin = onSelectOrigin,
                     onSavePlan = onSavePlan,
                     onOpenRecorder = { onOpenRecorder(state.destination.id) },
                 )
@@ -171,6 +174,7 @@ private fun RoutePlanContent(
     onSelectFuel: (FuelType) -> Unit,
     onSetSurcharge: (Boolean) -> Unit,
     onSelectDeparture: (DepartureWindow) -> Unit,
+    onSelectOrigin: (OriginMode) -> Unit,
     onSavePlan: () -> Unit,
     onOpenRecorder: () -> Unit,
 ) {
@@ -206,6 +210,13 @@ private fun RoutePlanContent(
 
         item(key = "map") {
             ParkingMapPanel(destination = destination)
+        }
+
+        item(key = "origin") {
+            OriginSelector(
+                content = content,
+                onSelectOrigin = onSelectOrigin,
+            )
         }
 
         item(key = "actions") {
@@ -274,7 +285,10 @@ private fun RoutePlanContent(
         }
 
         item(key = "tolls") {
-            TollSection(plan = content.plan)
+            TollSection(
+                plan = content.plan,
+                showCashAlert = content.cashAlertsEnabled,
+            )
         }
 
         item(key = "weather_header") {
