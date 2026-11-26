@@ -28,8 +28,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -64,7 +66,9 @@ class TrackRecorderViewModel(
                 history = tracks
                     .filter { track -> track.status == TrackStatus.COMPLETED }
                     .map { track -> track.toUi() },
-                resumable = resumable?.toUi(),
+                resumable = resumable
+                    ?.takeIf { session is RecorderSession.Idle }
+                    ?.toUi(),
             )
         }.catch { emit(TrackRecorderUiState.Error(UiError.DATABASE)) }
     }.stateIn(
@@ -74,10 +78,13 @@ class TrackRecorderViewModel(
     )
 
     init {
-        // Al abrir la pantalla se buscan tracks huérfanos antes que otra cosa.
+        // Observa cada transición de sesión: al volver a Idle recarga huérfanos
+        // y nunca ofrece como recuperable el track que el servicio está grabando.
         viewModelScope.launch {
-            resumableTrack.value = runCatching { trackRepository.findResumable().firstOrNull() }
-                .getOrNull()
+            controller.session
+                .map { session -> (session as? RecorderSession.Active)?.trackId }
+                .distinctUntilChanged()
+                .collect { activeTrackId -> reloadResumable(activeTrackId) }
         }
         viewModelScope.launch {
             controller.events.collect { event ->
@@ -91,6 +98,13 @@ class TrackRecorderViewModel(
                 }
             }
         }
+    }
+
+    private suspend fun reloadResumable(activeTrackId: String?) {
+        resumableTrack.value = runCatching {
+            trackRepository.findResumable()
+                .firstOrNull { track -> track.id != activeTrackId }
+        }.getOrNull()
     }
 
     fun start() {

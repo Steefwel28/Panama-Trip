@@ -206,7 +206,7 @@ fun RecordedTrack.toEntity(): TrackEntity = TrackEntity(
     status = status.name,
 )
 
-fun TrackPoint.toEntity(trackId: String, sequence: Int): TrackPointEntity = TrackPointEntity(
+fun TrackPoint.toEntity(trackId: String): TrackPointEntity = TrackPointEntity(
     trackId = trackId,
     sequence = sequence,
     latitude = point.latitude,
@@ -225,6 +225,7 @@ fun TrackPointEntity.toDomain(): TrackPoint = TrackPoint(
     recordedAtEpochMillis = recordedAt,
     activeElapsedMillis = activeElapsedMillis,
     segmentIndex = segmentIndex,
+    sequence = sequence,
 )
 
 /** Completa los tres vehículos para que la UI nunca tenga huecos. */

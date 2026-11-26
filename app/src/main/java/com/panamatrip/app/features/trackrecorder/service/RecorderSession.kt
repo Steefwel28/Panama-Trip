@@ -9,6 +9,7 @@ sealed interface RecorderSession {
     data object Idle : RecorderSession
 
     data class Active(
+        val trackId: String,
         val status: RecorderStatus,
         val snapshot: TrackSnapshot,
         val startedAtEpochMillis: Long,

@@ -34,6 +34,8 @@ data class TrackPoint(
     val activeElapsedMillis: Long,
     /** Tramo del recorrido: cada reanudación tras una pausa abre un segmento nuevo. */
     val segmentIndex: Int = 0,
+    /** Índice definitivo asignado al capturar; nunca se recalcula al persistir. */
+    val sequence: Int = 0,
 )
 
 /** Métricas instantáneas que alimentan la pantalla durante la grabación. */

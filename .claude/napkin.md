@@ -9,7 +9,7 @@
 ## Execution & Validation (Highest Priority)
 1. **[2026-11-24] Gradle en Windows exige JAVA_HOME de Android Studio**
    Do instead: `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"` antes de `.\gradlew.bat testDebugUnitTest assembleDebug --console=plain`.
-2. **[2026-11-24] 88 tests unitarios; `ExploreViewModelTest` usa `MainDispatcherRule` en `core/testing`**
+2. **[2026-11-25] 93 tests unitarios; `ExploreViewModelTest` usa `MainDispatcherRule` en `core/testing`**
    Do instead: fakes en memoria por repositorio + `backgroundScope.launch(UnconfinedTestDispatcher(testScheduler))` para activar `stateIn(WhileSubscribed)`.
 3. **[2026-11-24] Material3 1.4.0 expone `MotionScheme` como `internal`**
    Do instead: usar `PanamaMotion.spatial()/bouncy()` (springs propios) en `Theme.kt`; no intentar `MotionScheme.expressive()` hasta subir material3.
@@ -24,13 +24,15 @@
 1. **[2026-11-24] Snackbar único en el Scaffold raíz**
    Do instead: leer `LocalSnackbarHostState.current` en cada Route; nunca montar `SnackbarHost` en pantallas hijas ni pasar el estado por parámetro.
 2. **[2026-11-24] El feed no debe reordenarse al dar like**
-   Do instead: `ExploreViewModel` congela `frozenFeedOrder` en `toggleLike` y no emite `UiNotice` de like; el reorden solo ocurre en la primera carga.
+   Do instead: `ExploreViewModel` congela `frozenFeedOrder` en `toggleLike`; suéltalo en tab, filtros, `retry` y si aparece un ID nuevo (`rankedPosts.all { it.id in order }`), nunca con `Int.MAX_VALUE`.
 3. **[2026-11-24] Room sin migraciones destructivas**
    Do instead: toda subida de `version` en `PanamaTripDatabase` exige `Migration` explícita; solo `fallbackToDestructiveMigrationOnDowngrade()`.
-2. **[2026-11-24] `@ColumnInfo(defaultValue)` necesita literal SQL**
+4. **[2026-11-24] `@ColumnInfo(defaultValue)` necesita literal SQL**
    Do instead: textos entre comillas (`"'COMPLETED'"`), enteros sin comillas (`"0"`); luego confirmar en el schema JSON que `createSql` incluye `DEFAULT`.
-3. **[2026-11-24] Escrituras de track por lotes deben serializarse**
-   Do instead: `Mutex.withLock` alrededor de `persistBatch`/`save`/`discard`; `sequence` se calcula dentro de la sección crítica y el scope es de proceso (no del servicio).
+5. **[2026-11-25] Escrituras de track: un solo escritor y secuencia al capturar**
+   Do instead: un único consumidor de `Channel<PersistenceCommand>` en `persistenceScope` (orden cabecera→lotes→cierre); `TrackRecorderEngine` fija `TrackPoint.sequence = points.size`; jamás `countPoints()` al insertar.
+6. **[2026-11-25] `RecorderSession.Active` debe exponer `trackId`**
+   Do instead: la UI excluye ese id de `findResumable()` y publica `Idle` solo desde el escritor tras guardar/descartar; usa `stopSelf(lastStartId)`.
 
 ## User Directives
 1. **[2026-11-24] Material 3 Expressive puro**

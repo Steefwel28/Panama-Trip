@@ -194,9 +194,6 @@ interface TrackDao {
     @Query("SELECT * FROM track_points WHERE trackId = :trackId ORDER BY sequence ASC")
     suspend fun getPoints(trackId: String): List<TrackPointEntity>
 
-    @Query("SELECT COUNT(*) FROM track_points WHERE trackId = :trackId")
-    suspend fun countPoints(trackId: String): Int
-
     /** Tracks que quedaron a medias y se pueden retomar al reabrir la app. */
     @Query("SELECT * FROM tracks WHERE status IN ('IN_PROGRESS','PAUSED') ORDER BY startedAt DESC")
     suspend fun findResumable(): List<TrackEntity>
@@ -211,7 +208,8 @@ interface TrackDao {
         "UPDATE tracks SET status = :status, finishedAt = :finishedAt, " +
             "distanceMeters = :distanceMeters, activeDurationMillis = :activeDurationMillis, " +
             "averageSpeedKmh = :averageSpeedKmh, elevationGainMeters = :elevationGainMeters, " +
-            "pointCount = :pointCount WHERE id = :trackId",
+            "pointCount = :pointCount WHERE id = :trackId " +
+            "AND status NOT IN ('COMPLETED', 'DISCARDED')",
     )
     suspend fun updateProgress(
         trackId: String,

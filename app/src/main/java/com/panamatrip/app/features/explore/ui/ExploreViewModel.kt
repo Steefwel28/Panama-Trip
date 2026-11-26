@@ -120,10 +120,12 @@ class ExploreViewModel(
     }
 
     fun selectTab(tab: ExploreTab) {
+        releaseFrozenOrder()
         selectedTab.value = tab
     }
 
     fun toggleVehicleFilter(vehicle: VehicleType) {
+        releaseFrozenOrder()
         filters.update { it.toggleVehicle(vehicle) }
         viewModelScope.launch {
             val active = filters.value.vehicle
@@ -132,14 +134,17 @@ class ExploreViewModel(
     }
 
     fun toggleEcosystemFilter(ecosystem: Ecosystem) {
+        releaseFrozenOrder()
         filters.update { it.toggleEcosystem(ecosystem) }
     }
 
     fun toggleDistanceFilter(limitMeters: Int) {
+        releaseFrozenOrder()
         filters.update { it.toggleDistance(limitMeters) }
     }
 
     fun clearFilters() {
+        releaseFrozenOrder()
         filters.value = DirectoryFilters()
         viewModelScope.launch {
             runCatching { preferencesRepository.setPreferredVehicle(null) }
@@ -147,7 +152,17 @@ class ExploreViewModel(
     }
 
     fun retry() {
+        releaseFrozenOrder()
         retryTrigger.update { it + 1 }
+    }
+
+    /**
+     * Suelta el orden congelado en cuanto cambia el contexto del feed: pestaña,
+     * filtros, reintento o aparición de posts nuevos. Congelar de más esconde
+     * contenido recién publicado al fondo de la lista.
+     */
+    private fun releaseFrozenOrder() {
+        frozenFeedOrder.value = null
     }
 
     fun toggleLike(post: CommunityPost) {
@@ -240,12 +255,16 @@ class ExploreViewModel(
         }
         val affinity = bundle.preferences.affinity
         val rankedPosts = FeedRanker.rank(bundle.posts, affinity, clock())
+        // Un post publicado después del like no existe en el orden congelado:
+        // se suelta el congelado para que el ranking lo ubique donde le toca
+        // en vez de empujarlo al fondo con Int.MAX_VALUE.
         val frozenOrder = frozenFeedOrder.value
-        val orderedPosts = if (frozenOrder.isNullOrEmpty()) {
+            ?.takeIf { order -> order.isNotEmpty() && rankedPosts.all { it.id in order } }
+        val orderedPosts = if (frozenOrder == null) {
             rankedPosts
         } else {
             val position = frozenOrder.withIndex().associate { (index, id) -> id to index }
-            rankedPosts.sortedBy { position[it.id] ?: Int.MAX_VALUE }
+            rankedPosts.sortedBy { position.getValue(it.id) }
         }
         val feedPosts = orderedPosts.map { post ->
             FeedPostUi(post = post, affinity = affinity.normalizedFor(post.destination))

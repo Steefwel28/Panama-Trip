@@ -104,35 +104,66 @@ class ExploreViewModelTest {
         assertEquals(target.likeCount, updated.likeCount)
     }
 
+    @Test
+    fun `un post nuevo tras dar like conserva su posicion en el ranking`() = runTest {
+        val community = FakeCommunityRepository(defaultPosts())
+        val viewModel = createViewModel(community)
+        startCollecting(viewModel)
+        advanceUntilIdle()
+
+        val before = viewModel.state.value as ExploreUiState.Content
+        viewModel.toggleLike(before.posts.first().post)
+        advanceUntilIdle()
+
+        community.publish(
+            post(
+                id = "fresh-post",
+                destination = destination(id = "newest", ecosystem = Ecosystem.WATERFALL),
+                createdAt = now,
+            ),
+        )
+        advanceUntilIdle()
+
+        val after = viewModel.state.value as ExploreUiState.Content
+        // El recién publicado entra en su puesto de ranking, no al fondo.
+        assertEquals(
+            listOf("newest-post", "fresh-post", "oldest-post"),
+            after.posts.map { it.post.id },
+        )
+    }
+
     private fun TestScope.startCollecting(viewModel: ExploreViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
         }
     }
 
-    private fun createViewModel(): ExploreViewModel {
+    private fun createViewModel(
+        communityRepository: CommunityRepository = FakeCommunityRepository(defaultPosts()),
+    ): ExploreViewModel {
         val oldest = destination(id = "oldest", ecosystem = Ecosystem.MOUNTAIN)
         val newest = destination(id = "newest", ecosystem = Ecosystem.WATERFALL)
-        val posts = listOf(
-            post(
-                id = "oldest-post",
-                destination = oldest,
-                createdAt = now - TEN_DAYS_MILLIS,
-            ),
-            post(
-                id = "newest-post",
-                destination = newest,
-                createdAt = now,
-            ),
-        )
         return ExploreViewModel(
             destinationRepository = FakeDestinationRepository(listOf(oldest, newest)),
-            communityRepository = FakeCommunityRepository(posts),
+            communityRepository = communityRepository,
             collectionRepository = FakeCollectionRepository(),
             preferencesRepository = FakePreferencesRepository(),
             clock = { now },
         )
     }
+
+    private fun defaultPosts(): List<CommunityPost> = listOf(
+        post(
+            id = "oldest-post",
+            destination = destination(id = "oldest", ecosystem = Ecosystem.MOUNTAIN),
+            createdAt = now - TEN_DAYS_MILLIS,
+        ),
+        post(
+            id = "newest-post",
+            destination = destination(id = "newest", ecosystem = Ecosystem.WATERFALL),
+            createdAt = now,
+        ),
+    )
 
     private fun destination(id: String, ecosystem: Ecosystem): Destination = Destination(
         id = id,
@@ -201,6 +232,10 @@ class ExploreViewModelTest {
         private val state = MutableStateFlow(initial)
 
         override fun observePosts(): Flow<List<CommunityPost>> = state
+
+        fun publish(post: CommunityPost) {
+            state.update { posts -> posts + post }
+        }
 
         override fun observeComments(postId: String): Flow<List<PostComment>> = flowOf(emptyList())
 

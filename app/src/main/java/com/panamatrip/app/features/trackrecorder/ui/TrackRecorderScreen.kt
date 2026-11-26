@@ -294,6 +294,8 @@ private fun TrackRecorderContent(
             }
         }
 
+        // Solo en Idle: el ViewModel anula `resumable` mientras hay sesión
+        // activa, así el track en grabación nunca aparece como interrumpido.
         if (resumable != null && active == null) {
             item(key = "recover") {
                 ResumeTrackCard(

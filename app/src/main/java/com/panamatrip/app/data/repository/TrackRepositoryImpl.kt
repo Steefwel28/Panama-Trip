@@ -32,14 +32,14 @@ class TrackRepositoryImpl(
     override suspend fun save(track: RecordedTrack) {
         database.withTransaction {
             trackDao.insertTrack(track.toEntity())
-            insertPoints(track.id, track.points, startSequence = 0)
+            insertPoints(track.id, track.points)
         }
     }
 
     override suspend fun startTrack(track: RecordedTrack) {
         database.withTransaction {
             trackDao.insertTrack(track.copy(status = TrackStatus.IN_PROGRESS).toEntity())
-            insertPoints(track.id, track.points, startSequence = 0)
+            insertPoints(track.id, track.points)
         }
     }
 
@@ -49,9 +49,9 @@ class TrackRepositoryImpl(
         progress: TrackProgress,
     ) {
         database.withTransaction {
-            // Los lotes se agregan al final: el GPS solo entrega puntos nuevos.
-            val startSequence = trackDao.countPoints(trackId)
-            insertPoints(trackId, points, startSequence)
+            // La secuencia viene fijada por el motor al capturar: un reintento
+            // del mismo lote reemplaza las mismas filas en lugar de duplicarlas.
+            insertPoints(trackId, points)
             trackDao.updateProgress(
                 trackId = trackId,
                 status = progress.status.name,
@@ -97,11 +97,8 @@ class TrackRepositoryImpl(
     private suspend fun insertPoints(
         trackId: String,
         points: List<TrackPoint>,
-        startSequence: Int,
     ) {
         if (points.isEmpty()) return
-        trackDao.insertPoints(
-            points.mapIndexed { index, point -> point.toEntity(trackId, startSequence + index) },
-        )
+        trackDao.insertPoints(points.map { point -> point.toEntity(trackId) })
     }
 }

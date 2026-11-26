@@ -36,14 +36,13 @@ import com.panamatrip.app.domain.model.TrackStatus
 import com.panamatrip.app.domain.repository.TrackRepository
 import com.panamatrip.app.domain.track.TrackRecorderEngine
 import java.util.UUID
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -53,9 +52,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 
 /**
  * Foreground service ligero que graba el recorrido por satélite sin depender
@@ -80,15 +76,15 @@ class LocationTrackingService : Service() {
     /** Identificador persistido: sobrevive aunque el servicio se recree. */
     private var trackId: String? = null
 
-    /** Puntos aún no escritos en Room. */
+    /**
+     * Puntos aún no escritos en Room. Solo se mutan en el hilo principal
+     * ([addLocation], ticker y cierres); el escritor recibe copias inmutables.
+     */
     private val pendingPoints = mutableListOf<TrackPoint>()
     private var lastFlushElapsedMillis = 0L
 
-    /** Se completa cuando la cabecera IN_PROGRESS ya existe en Room. */
-    private var trackReady = CompletableDeferred<Unit>()
-
-    /** Serializa los lotes: `sequence` se calcula dentro de la sección crítica. */
-    private val flushMutex = Mutex()
+    /** startId del último comando: `stopSelf(lastStartId)` no mata un START nuevo. */
+    private var lastStartId = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -96,18 +92,20 @@ class LocationTrackingService : Service() {
         trackRepository = (application as PanamaTripApplication).container.trackRepository
         notificationManager = getSystemService(NotificationManager::class.java)
         createNotificationChannel()
+        ensurePersistenceWriter(trackRepository)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        lastStartId = startId
         when (intent?.action) {
             ACTION_START -> startRecording(intent)
             ACTION_PAUSE -> pauseRecording()
             ACTION_RESUME -> resumeRecording()
             ACTION_FINISH -> finishRecording()
             ACTION_DISCARD -> discardRecording()
-            else -> stopSelf()
+            else -> stopSelf(startId)
         }
         return START_NOT_STICKY
     }
@@ -117,7 +115,9 @@ class LocationTrackingService : Service() {
         stopTicker()
         stopLocationUpdates()
         serviceScope.cancel()
-        if (_session.value is RecorderSession.Active) {
+        // Un finish/discard ya encolado deja `engine == null`: el escritor es
+        // quien publica Idle al terminar la escritura, no este callback.
+        if (engine != null && _session.value is RecorderSession.Active) {
             _session.value = RecorderSession.Idle
         }
         super.onDestroy()
@@ -137,7 +137,7 @@ class LocationTrackingService : Service() {
             runCatching { startForegroundCompat(EMPTY_SNAPSHOT) }
             _events.tryEmit(RecorderEvent.PERMISSION_DENIED)
             stopForegroundCompat()
-            stopSelf()
+            stopSelf(lastStartId)
             return
         }
 
@@ -146,8 +146,8 @@ class LocationTrackingService : Service() {
         startedAtEpochMillis = System.currentTimeMillis()
         val newTrackId = "track-${UUID.randomUUID()}"
         trackId = newTrackId
-        trackReady = CompletableDeferred()
         pendingPoints.clear()
+        lastFlushElapsedMillis = SystemClock.elapsedRealtime()
         engine = TrackRecorderEngine(
             trackId = newTrackId,
             startedAtEpochMillis = startedAtEpochMillis,
@@ -156,39 +156,39 @@ class LocationTrackingService : Service() {
             destinationName = destinationName,
         )
 
-        // La cabecera nace IN_PROGRESS: si Android mata el proceso, al volver a
-        // abrir la app el recorrido queda recuperable en lugar de perderse.
-        persistenceScope.launch {
-            withContext(NonCancellable) {
-                runCatching {
-                    trackRepository.startTrack(
-                        RecordedTrack(
-                            id = newTrackId,
-                            destinationId = destinationId,
-                            destinationName = destinationName,
-                            startedAtEpochMillis = startedAtEpochMillis,
-                            finishedAtEpochMillis = 0L,
-                            distanceMeters = 0,
-                            activeDurationMillis = 0L,
-                            averageSpeedKmh = 0.0,
-                            elevationGainMeters = 0,
-                            pointCount = 0,
-                            status = TrackStatus.IN_PROGRESS,
-                        ),
-                    )
-                }
-                trackReady.complete(Unit)
-            }
-        }
-
         val snapshot = snapshot()
+        // El foreground se levanta antes de crear la cabecera: si falla, no
+        // queda un track huérfano de 0 puntos en Room.
         if (runCatching { startForegroundCompat(snapshot) }.isFailure) {
             engine = null
+            trackId = null
             _events.tryEmit(RecorderEvent.FAILED)
-            stopSelf()
+            stopSelf(lastStartId)
             return
         }
+
+        // La cabecera nace IN_PROGRESS: si Android mata el proceso, al volver a
+        // abrir la app el recorrido queda recuperable en lugar de perderse.
+        enqueue(
+            PersistenceCommand.StartTrack(
+                RecordedTrack(
+                    id = newTrackId,
+                    destinationId = destinationId,
+                    destinationName = destinationName,
+                    startedAtEpochMillis = startedAtEpochMillis,
+                    finishedAtEpochMillis = 0L,
+                    distanceMeters = 0,
+                    activeDurationMillis = 0L,
+                    averageSpeedKmh = 0.0,
+                    elevationGainMeters = 0,
+                    pointCount = 0,
+                    status = TrackStatus.IN_PROGRESS,
+                ),
+            ),
+        )
+
         _session.value = RecorderSession.Active(
+            trackId = newTrackId,
             status = snapshot.status,
             snapshot = snapshot,
             startedAtEpochMillis = startedAtEpochMillis,
@@ -200,7 +200,7 @@ class LocationTrackingService : Service() {
     }
 
     private fun pauseRecording() {
-        val engine = engine ?: return stopSelf()
+        val engine = engine ?: return stopSelf(lastStartId)
         if (engine.pause(SystemClock.elapsedRealtime())) {
             publishSnapshot()
             flushPendingPoints(force = true)
@@ -209,7 +209,7 @@ class LocationTrackingService : Service() {
     }
 
     private fun resumeRecording() {
-        val engine = engine ?: return stopSelf()
+        val engine = engine ?: return stopSelf(lastStartId)
         if (engine.resume(SystemClock.elapsedRealtime())) {
             publishSnapshot()
             flushPendingPoints(force = true)
@@ -218,7 +218,7 @@ class LocationTrackingService : Service() {
     }
 
     private fun finishRecording() {
-        val activeEngine = engine ?: return stopSelf()
+        val activeEngine = engine ?: return stopSelf(lastStartId)
         engine = null
         stopTicker()
         stopLocationUpdates()
@@ -229,48 +229,47 @@ class LocationTrackingService : Service() {
         )
         val finishedId = trackId
         pendingPoints.clear()
-        persistenceScope.launch {
-            withContext(NonCancellable) {
-                val result = flushMutex.withLock {
-                    trackReady.await()
-                    runCatching { trackRepository.save(track) }
-                }
-                _session.value = RecorderSession.Idle
-                _events.tryEmit(if (result.isSuccess) RecorderEvent.SAVED else RecorderEvent.FAILED)
-            }
-            if (finishedId != null) trackId = null
-            stopForegroundCompat()
-            stopSelf()
+        if (finishedId != null) {
+            // El guardado y el Idle los completa el escritor serializado.
+            enqueue(PersistenceCommand.FinishTrack(track))
+            // Solo limpia si sigue siendo la misma grabación: un START
+            // inmediatamente posterior conserva su propio trackId.
+            if (trackId == finishedId) trackId = null
+        } else {
+            _session.value = RecorderSession.Idle
         }
+        stopIfIdle()
     }
 
     private fun discardRecording() {
         val discardedId = trackId
         engine = null
-        trackId = null
         pendingPoints.clear()
         stopTicker()
         stopLocationUpdates()
-        _session.value = RecorderSession.Idle
-        _events.tryEmit(RecorderEvent.DISCARDED)
         if (discardedId != null) {
-            persistenceScope.launch {
-                withContext(NonCancellable) {
-                    flushMutex.withLock {
-                        trackReady.await()
-                        runCatching { trackRepository.discard(discardedId) }
-                    }
-                }
-            }
+            enqueue(PersistenceCommand.DiscardTrack(discardedId))
+            if (trackId == discardedId) trackId = null
+        } else {
+            _session.value = RecorderSession.Idle
+            _events.tryEmit(RecorderEvent.DISCARDED)
         }
+        stopIfIdle()
+    }
+
+    /** Apaga el servicio solo si no hay motor: nunca corta un START nuevo. */
+    private fun stopIfIdle() {
+        if (engine != null) return
         stopForegroundCompat()
-        stopSelf()
+        stopSelf(lastStartId)
     }
 
     private fun publishSnapshot() {
         val activeEngine = engine ?: return
+        val activeTrackId = trackId ?: return
         val snapshot = activeEngine.snapshot(SystemClock.elapsedRealtime())
         _session.value = RecorderSession.Active(
+            trackId = activeTrackId,
             status = snapshot.status,
             snapshot = snapshot,
             startedAtEpochMillis = startedAtEpochMillis,
@@ -358,9 +357,9 @@ class LocationTrackingService : Service() {
         }
 
     /**
-     * Escribe el buffer en Room cuando hay 10 puntos o pasaron 30 s. Siempre
-     * corre en [persistenceScope] con [NonCancellable]: si el servicio muere a
-     * mitad de escritura, el lote no se descarta.
+     * Encola el buffer en el escritor serializado cuando hay 10 puntos o
+     * pasaron 30 s. El escritor corre en [persistenceScope] y reintenta el lote
+     * completo sin devolverlo a esta lista (la `sequence` ya es definitiva).
      */
     private fun flushPendingPoints(force: Boolean) {
         val id = trackId ?: return
@@ -388,25 +387,7 @@ class LocationTrackingService : Service() {
             pointCount = snapshot?.pointCount ?: 0,
             finishedAtEpochMillis = 0L,
         )
-
-        persistenceScope.launch {
-            withContext(NonCancellable) {
-                flushMutex.withLock {
-                    trackReady.await()
-                    val result = runCatching {
-                        if (batch.isNotEmpty()) {
-                            trackRepository.persistBatch(id, batch, progress)
-                        } else {
-                            trackRepository.updateProgress(id, progress)
-                        }
-                    }
-                    if (result.isFailure) {
-                        // Devolver el lote al frente conserva el orden de secuencia.
-                        pendingPoints.addAll(0, batch)
-                    }
-                }
-            }
-        }
+        enqueue(PersistenceCommand.PersistBatch(id, batch, progress))
     }
 
     private fun stopLocationUpdates() {
@@ -550,6 +531,104 @@ class LocationTrackingService : Service() {
          * servicio ni con la Activity, así un lote en vuelo siempre termina.
          */
         private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+        /**
+         * Comandos de persistencia procesados por un único consumidor: el orden
+         * de llegada es el orden de escritura (cabecera → lotes → cierre).
+         */
+        private val persistenceCommands = Channel<PersistenceCommand>(Channel.UNLIMITED)
+
+        @Volatile
+        private var persistenceWriter: Job? = null
+
+        private const val PERSIST_ATTEMPTS = 3
+        private const val PERSIST_RETRY_DELAY_MILLIS = 250L
+
+        private sealed interface PersistenceCommand {
+            data class StartTrack(val track: RecordedTrack) : PersistenceCommand
+
+            data class PersistBatch(
+                val trackId: String,
+                val points: List<TrackPoint>,
+                val progress: TrackProgress,
+            ) : PersistenceCommand
+
+            data class FinishTrack(val track: RecordedTrack) : PersistenceCommand
+
+            data class DiscardTrack(val trackId: String) : PersistenceCommand
+        }
+
+        @Synchronized
+        private fun ensurePersistenceWriter(repository: TrackRepository) {
+            if (persistenceWriter?.isActive == true) return
+            persistenceWriter = persistenceScope.launch {
+                // Puntos que fallaron al persistir: se reenvían desde dentro del
+                // propio escritor con el próximo comando, nunca a una lista
+                // compartida con el hilo principal.
+                var carryOver = emptyList<TrackPoint>()
+                for (command in persistenceCommands) {
+                    carryOver = when (command) {
+                        is PersistenceCommand.StartTrack -> {
+                            retryIo { repository.startTrack(command.track) }
+                            // Un lote fallido de otra grabación no debe mezclarse
+                            // con las secuencias del track nuevo.
+                            emptyList()
+                        }
+
+                        is PersistenceCommand.PersistBatch -> {
+                            val batch = (carryOver + command.points).distinctBy { it.sequence }
+                            val result = retryIo {
+                                repository.persistBatch(command.trackId, batch, command.progress)
+                            }
+                            if (result.isSuccess) emptyList() else batch
+                        }
+
+                        is PersistenceCommand.FinishTrack -> {
+                            val points = (carryOver + command.track.points)
+                                .distinctBy { it.sequence }
+                            val result = retryIo {
+                                repository.save(command.track.copy(points = points))
+                            }
+                            completeSession(command.track.id)
+                            _events.tryEmit(
+                                if (result.isSuccess) RecorderEvent.SAVED else RecorderEvent.FAILED,
+                            )
+                            emptyList()
+                        }
+
+                        is PersistenceCommand.DiscardTrack -> {
+                            retryIo { repository.discard(command.trackId) }
+                            completeSession(command.trackId)
+                            _events.tryEmit(RecorderEvent.DISCARDED)
+                            emptyList()
+                        }
+                    }
+                }
+            }
+        }
+
+        private fun enqueue(command: PersistenceCommand) {
+            persistenceCommands.trySend(command)
+        }
+
+        /** Publica Idle solo si la sesión sigue siendo la grabación cerrada. */
+        private fun completeSession(finishedTrackId: String) {
+            val current = _session.value
+            if (current is RecorderSession.Active && current.trackId == finishedTrackId) {
+                _session.value = RecorderSession.Idle
+            }
+        }
+
+        private suspend fun <T> retryIo(block: suspend () -> T): Result<T> {
+            var lastFailure: Throwable? = null
+            repeat(PERSIST_ATTEMPTS) { attempt ->
+                val result = runCatching { block() }
+                if (result.isSuccess) return result
+                lastFailure = result.exceptionOrNull()
+                if (attempt < PERSIST_ATTEMPTS - 1) delay(PERSIST_RETRY_DELAY_MILLIS)
+            }
+            return Result.failure(lastFailure ?: IllegalStateException("persistencia fallida"))
+        }
 
         private val EMPTY_SNAPSHOT = TrackSnapshot(
             status = RecorderStatus.RECORDING,

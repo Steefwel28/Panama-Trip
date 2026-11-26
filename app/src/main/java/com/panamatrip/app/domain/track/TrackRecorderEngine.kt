@@ -53,6 +53,9 @@ class TrackRecorderEngine(
             recordedAtEpochMillis = sample.capturedAtEpochMillis,
             activeElapsedMillis = activeElapsedMillis(nowElapsedMillis),
             segmentIndex = currentSegmentIndex,
+            // El índice se fija aquí: es el orden real de captura y sobrevive a
+            // reintentos de persistencia sin volver a consultar Room.
+            sequence = points.size,
         )
         return true
     }

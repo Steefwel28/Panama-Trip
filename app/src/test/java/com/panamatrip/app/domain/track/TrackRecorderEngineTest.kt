@@ -75,6 +75,21 @@ class TrackRecorderEngineTest {
         assertEquals(0, engine.snapshot(1_000L).pointCount)
     }
 
+    @Test
+    fun `sequence is fixed at capture and survives pause and finish`() {
+        val engine = newEngine()
+
+        assertTrue(engine.addSample(sample(latitude = 8.9800), 1_000L))
+        assertTrue(engine.addSample(sample(latitude = 8.9810), 2_000L))
+        engine.pause(3_000L)
+        engine.resume(10_000L)
+        assertTrue(engine.addSample(sample(latitude = 8.9900), 11_000L))
+
+        assertEquals(listOf(0, 1, 2), engine.recordedPoints().map { it.sequence })
+        // Persistir dos veces el mismo lote reemplaza las mismas filas.
+        assertEquals(listOf(0, 1, 2), engine.finish(12_000L, 1_700_000_100_000L).points.map { it.sequence })
+    }
+
     private fun newEngine() = TrackRecorderEngine(
         trackId = "track-test",
         startedAtEpochMillis = 1_700_000_000_000L,
