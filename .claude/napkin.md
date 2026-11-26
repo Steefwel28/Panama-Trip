@@ -9,7 +9,7 @@
 ## Execution & Validation (Highest Priority)
 1. **[2026-11-24] Gradle en Windows exige JAVA_HOME de Android Studio**
    Do instead: `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"` antes de `.\gradlew.bat testDebugUnitTest assembleDebug --console=plain`.
-2. **[2026-11-25] 93 tests unitarios; `ExploreViewModelTest` usa `MainDispatcherRule` en `core/testing`**
+2. **[2026-11-25] 129 tests unitarios; `ExploreViewModelTest` usa `MainDispatcherRule` en `core/testing`**
    Do instead: fakes en memoria por repositorio + `backgroundScope.launch(UnconfinedTestDispatcher(testScheduler))` para activar `stateIn(WhileSubscribed)`.
 3. **[2026-11-24] Material3 1.4.0 expone `MotionScheme` como `internal`**
    Do instead: usar `PanamaMotion.spatial()/bouncy()` (springs propios) en `Theme.kt`; no intentar `MotionScheme.expressive()` hasta subir material3.
@@ -37,6 +37,10 @@
    Do instead: la UI excluye ese id de `findResumable()` y publica `Idle` solo desde el escritor tras guardar/descartar; usa `stopSelf(lastStartId)`.
 7. **[2026-11-25] Ubicación y preferencias no se mezclan**
    Do instead: leer GPS con `DeviceLocationProvider` (sin pedir permiso, fallback `UserPreferences.DEFAULT_ORIGIN`); el filtro de vehículo del directorio es solo de sesión y `preferredVehicle` se edita en Perfil/Mi Ruta.
+8. **[2026-11-26] `RecorderEvent` es sealed: `Saved(trackId)` lleva el id del track**
+   Do instead: al cerrar la grabación navega a `composer?trackId=...` (solo IDs en la ruta); `PostComposerViewModel` escanea MediaStore entre `startedAtEpochMillis` y `finishedAtEpochMillis` con `RecentMediaScanner` y enlaza la ruta.
+9. **[2026-11-26] Room v6 añade `movilSignal`/`tigoSignal` a `destinations`**
+   Do instead: columnas `TEXT NOT NULL DEFAULT 'MEDIUM'` en `MIGRATION_5_6`; la cobertura se pinta en cápsulas separadas +Móvil/Tigo y los reportes de acceso caducan a las 48 h con ticker de 60 s.
 
 ## User Directives
 1. **[2026-11-24] Material 3 Expressive puro**

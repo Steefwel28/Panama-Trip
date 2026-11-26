@@ -8,6 +8,7 @@ import com.panamatrip.app.core.database.entity.PostLikeEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.data.mapper.toDomain
+import com.panamatrip.app.data.mapper.toEntity
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.NewCommunityPost
 import com.panamatrip.app.domain.model.PostComment
@@ -28,7 +29,7 @@ class CommunityRepositoryImpl(
 ) : CommunityRepository {
 
     override fun observePosts(): Flow<List<CommunityPost>> = combine(
-        postDao.observeAll(),
+        postDao.observeAllWithMedia(),
         postDao.observeLikedPostIds(),
         postDao.observeCommentCounts(),
         collectionDao.observeEntries(),
@@ -41,7 +42,8 @@ class CommunityRepositoryImpl(
             .mapValues { (_, entries) -> entries.map { it.collectionId }.toSet() }
         val destinationsById = destinations.associateBy { it.id }
 
-        posts.mapNotNull { post ->
+        posts.mapNotNull { entry ->
+            val post = entry.post
             val destination = destinationsById[post.destinationId] ?: return@mapNotNull null
             post.toDomain(
                 destination = destination,
@@ -49,6 +51,7 @@ class CommunityRepositoryImpl(
                 isLiked = post.id in liked,
                 commentCount = countsByPost[post.id] ?: 0,
                 savedCollectionIds = savedByPost[post.id].orEmpty(),
+                media = entry.media,
             )
         }
     }
@@ -90,27 +93,39 @@ class CommunityRepositoryImpl(
     override suspend fun publishPost(post: NewCommunityPost) {
         val trimmed = post.caption.trim()
         require(trimmed.isNotEmpty()) { "La publicación necesita una descripción" }
-        require(post.imageUrl.isNotBlank()) { "La publicación necesita una foto" }
-        postDao.insertPost(
-            PostEntity(
-                id = "post-${UUID.randomUUID()}",
-                destinationId = post.destinationId,
-                authorName = post.authorName,
-                authorRole = post.authorRole,
-                authorInitials = post.authorInitials,
-                caption = trimmed,
-                imageUrl = post.imageUrl,
-                visitedYear = post.visitedYear,
-                visitedMonth = post.visitedMonth,
-                vehicleUsed = post.vehicleUsed.name,
-                walkDistanceMeters = post.walkDistanceMeters,
-                walkMinutes = post.walkMinutes,
-                activityTag = null,
-                baseLikeCount = 0,
-                createdAt = clock(),
-                photoVerified = post.photoVerified,
-                exifCapturedAt = post.exifCapturedAtEpochMillis,
-            ),
-        )
+        require(post.media.isNotEmpty() || post.imageUrl.isNotBlank()) {
+            "La publicación necesita al menos una foto o video"
+        }
+        val postId = "post-${UUID.randomUUID()}"
+        val cover = post.media.firstOrNull()?.uri ?: post.imageUrl
+        database.withTransaction {
+            postDao.insertPost(
+                PostEntity(
+                    id = postId,
+                    destinationId = post.destinationId,
+                    authorName = post.authorName,
+                    authorRole = post.authorRole,
+                    authorInitials = post.authorInitials,
+                    caption = trimmed,
+                    imageUrl = cover,
+                    visitedYear = post.visitedYear,
+                    visitedMonth = post.visitedMonth,
+                    vehicleUsed = post.vehicleUsed.name,
+                    walkDistanceMeters = post.walkDistanceMeters,
+                    walkMinutes = post.walkMinutes,
+                    activityTag = null,
+                    baseLikeCount = 0,
+                    createdAt = clock(),
+                    photoVerified = post.photoVerified,
+                    exifCapturedAt = post.exifCapturedAtEpochMillis,
+                    trackId = post.trackId,
+                ),
+            )
+            if (post.media.isNotEmpty()) {
+                postDao.insertMedia(
+                    post.media.mapIndexed { index, item -> item.toEntity(postId, index) },
+                )
+            }
+        }
     }
 }

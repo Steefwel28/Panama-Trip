@@ -1,32 +1,44 @@
 package com.panamatrip.app.features.profile.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,8 +58,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -57,6 +73,7 @@ import com.panamatrip.app.R
 import com.panamatrip.app.core.designsystem.component.EmptyState
 import com.panamatrip.app.core.designsystem.component.ErrorState
 import com.panamatrip.app.core.designsystem.component.ScreenLoading
+import com.panamatrip.app.core.designsystem.component.TonalImage
 import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
 import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
@@ -71,7 +88,11 @@ import com.panamatrip.app.core.designsystem.theme.MetricType
 import com.panamatrip.app.core.designsystem.theme.PanamaMotion
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.VehicleType
+import com.panamatrip.app.domain.passport.PassportBadge
+import com.panamatrip.app.domain.passport.PassportCatalog
+import com.panamatrip.app.domain.profile.OdometerTier
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun ProfileRoute(
@@ -81,6 +102,12 @@ fun ProfileRoute(
 ) {
     val viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.factory(container))
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val avatarPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? -> uri?.let(viewModel::setAvatar) }
+    val bannerPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? -> uri?.let(viewModel::setBanner) }
 
     ProfileScreen(
         state = state,
@@ -90,6 +117,17 @@ fun ProfileRoute(
         onSetPreferredVehicle = viewModel::setPreferredVehicle,
         onSetCashAlerts = viewModel::setCashAlerts,
         onRetry = viewModel::retry,
+        onPickAvatar = {
+            avatarPicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
+        onPickBanner = {
+            bannerPicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
+        onExplore = onExplore,
         savedContent = {
             com.panamatrip.app.features.saved.ui.SavedRoute(
                 container = container,
@@ -111,17 +149,30 @@ fun ProfileScreen(
     onSetPreferredVehicle: (VehicleType) -> Unit,
     onSetCashAlerts: (Boolean) -> Unit,
     onRetry: () -> Unit,
+    onPickAvatar: () -> Unit,
+    onPickBanner: () -> Unit,
+    onExplore: () -> Unit,
     savedContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showSettings by rememberSaveable { mutableStateOf(false) }
     val haptics = rememberPanamaHaptics()
+    val content = state as? ProfileUiState.Content
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // Desenfoque nativo solo en el fondo, detrás del modal sólido. En API
+    // 26–30 el modificador es no-op y queda el scrim oscuro del bottom sheet.
+    val backgroundModifier = if (showSettings) {
+        modifier.fillMaxSize().blur(BACKGROUND_BLUR)
+    } else {
+        modifier.fillMaxSize()
+    }
+
+    Column(modifier = backgroundModifier) {
         ProfileHeader(
-            guestMode = (state as? ProfileUiState.Content)?.guestMode ?: true,
+            content = content,
             onOpenSettings = { showSettings = true },
-            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+            onPickAvatar = onPickAvatar,
+            onPickBanner = onPickBanner,
         )
 
         when (state) {
@@ -134,6 +185,34 @@ fun ProfileScreen(
                 modifier = Modifier.padding(top = Dimens.sectionGap),
             )
             is ProfileUiState.Content -> {
+                OdometerCard(
+                    content = state,
+                    modifier = Modifier.padding(
+                        start = Dimens.cardPadding,
+                        end = Dimens.cardPadding,
+                        top = Dimens.itemGap,
+                    ),
+                )
+                PassportCard(
+                    passport = state.passport,
+                    modifier = Modifier.padding(
+                        start = Dimens.cardPadding,
+                        end = Dimens.cardPadding,
+                        top = Dimens.itemGap,
+                    ),
+                )
+                EcosystemBar(
+                    shares = state.ecosystems,
+                    onClick = {
+                        haptics.segment()
+                        onExplore()
+                    },
+                    modifier = Modifier.padding(
+                        start = Dimens.cardPadding,
+                        end = Dimens.cardPadding,
+                        top = Dimens.itemGap,
+                    ),
+                )
                 ExpeditionStatsCard(stats = state.stats)
                 ProfileTabs(
                     selected = state.tab,
@@ -192,43 +271,364 @@ fun ProfileScreen(
 
 @Composable
 private fun ProfileHeader(
-    guestMode: Boolean,
+    content: ProfileUiState.Content?,
     onOpenSettings: () -> Unit,
-    modifier: Modifier = Modifier,
+    onPickAvatar: () -> Unit,
+    onPickBanner: () -> Unit,
 ) {
-    Row(
-        modifier = modifier
+    Box(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.cardPadding, vertical = Dimens.itemGap),
-        verticalAlignment = Alignment.CenterVertically,
+            .height(228.dp),
     ) {
-        IconButton(onClick = onOpenSettings) {
+        TonalImage(
+            imageUrl = content?.bannerPath,
+            contentDescription = stringResource(R.string.profile_banner_description),
+            seed = "profile-banner",
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onPickBanner),
+        )
+        // Degradado sólido hacia la superficie: sin tarjetas translúcidas.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0f to Color.Black.copy(alpha = 0.18f),
+                            0.45f to Color.Transparent,
+                            1f to MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                ),
+        )
+        IconButton(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(end = Dimens.tightGap),
+        ) {
             Icon(
                 imageVector = Icons.Rounded.Menu,
                 contentDescription = stringResource(R.string.profile_menu),
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = Color.White,
             )
         }
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.cardPadding, vertical = Dimens.itemGap),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.itemGap),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = content?.userName?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.profile_title),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Black,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (content != null && content.userHandle.isNotBlank()) {
+                    Text(
+                        text = "@${content.userHandle}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+                if (content != null && content.userBio.isNotBlank()) {
+                    Text(
+                        text = content.userBio,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (content?.guestMode == true) {
+                    TonalTag(
+                        text = stringResource(R.string.profile_guest_mode),
+                        tone = Tone.Neutral,
+                    )
+                }
+            }
+            Box(contentAlignment = Alignment.BottomEnd) {
+                TonalImage(
+                    imageUrl = content?.avatarPath,
+                    contentDescription = stringResource(R.string.profile_avatar_description),
+                    seed = "profile-avatar",
+                    corner = 48.dp,
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(CircleShape),
+                )
+                FilledIconButton(
+                    onClick = onPickAvatar,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = PanamaIcons.Plus,
+                        contentDescription = stringResource(R.string.profile_avatar_change),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Odómetro animado: solo distancia válida a pie de tracks completados. */
+@Composable
+private fun OdometerCard(
+    content: ProfileUiState.Content,
+    modifier: Modifier = Modifier,
+) {
+    val animatedKm by animateFloatAsState(
+        targetValue = content.odometerMeters / METERS_PER_KILOMETER,
+        animationSpec = tween(durationMillis = 900),
+        label = "odometer",
+    )
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.tonalElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+        ) {
             Text(
-                text = stringResource(R.string.profile_eyebrow),
+                text = stringResource(R.string.profile_odometer_eyebrow),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.tertiary,
             )
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = String.format(Locale.US, "%.1f", animatedKm),
+                    style = MetricType.Large,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.profile_stat_kilometers),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 6.dp, bottom = 4.dp),
+                )
+            }
             Text(
-                text = stringResource(R.string.profile_title),
-                style = MaterialTheme.typography.headlineMedium,
+                text = stringResource(content.odometerTier.labelRes()),
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-        }
-        if (guestMode) {
-            TonalTag(
-                text = stringResource(R.string.profile_guest_mode),
-                tone = Tone.Neutral,
+            Text(
+                text = if (content.metersToNextTier > 0) {
+                    stringResource(
+                        R.string.profile_odometer_next_tier,
+                        distanceLabel(content.metersToNextTier),
+                    )
+                } else {
+                    stringResource(R.string.profile_odometer_top_tier)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
+
+/** Pasaporte: 10 provincias + 6 comarcas e insignias de temporada. */
+@Composable
+private fun PassportCard(
+    passport: PassportUi,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.tonalElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.itemGap),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.profile_passport_eyebrow),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Text(
+                        text = stringResource(R.string.profile_passport_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                TonalTag(
+                    text = stringResource(
+                        R.string.profile_passport_progress,
+                        passport.unlockedRegions,
+                        passport.totalRegions,
+                    ),
+                    tone = Tone.Primary,
+                )
+            }
+            PassportRegionGroup(
+                title = stringResource(R.string.profile_passport_provinces),
+                regions = PassportCatalog.provinces,
+                unlocked = passport.unlockedRegionCodes,
+            )
+            PassportRegionGroup(
+                title = stringResource(R.string.profile_passport_comarcas),
+                regions = PassportCatalog.comarcas,
+                unlocked = passport.unlockedRegionCodes,
+            )
+            Text(
+                text = stringResource(R.string.profile_passport_badges),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                PassportBadge.entries.forEach { badge ->
+                    val unlocked = badge in passport.badges
+                    TonalTag(
+                        text = stringResource(badge.labelRes()),
+                        tone = if (unlocked) Tone.Primary else Tone.Neutral,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PassportRegionGroup(
+    title: String,
+    regions: List<com.panamatrip.app.domain.passport.PassportRegion>,
+    unlocked: Set<String>,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            regions.forEach { region ->
+                val isUnlocked = region.code in unlocked
+                TonalTag(
+                    text = if (isUnlocked) region.name else "· ${region.name}",
+                    tone = if (isUnlocked) Tone.Primary else Tone.Neutral,
+                )
+            }
+        }
+    }
+}
+
+/** Barra de afinidad por ecosistema; tocarla lleva al explorador. */
+@Composable
+private fun EcosystemBar(
+    shares: List<EcosystemShareUi>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (shares.isEmpty()) return
+    val colors = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.secondary,
+        MaterialTheme.colorScheme.primaryContainer,
+    )
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.tonalElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+        ) {
+            Text(
+                text = stringResource(R.string.profile_ecosystem_eyebrow),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp)),
+            ) {
+                shares.forEachIndexed { index, share ->
+                    Box(
+                        modifier = Modifier
+                            .weight(share.share.coerceAtLeast(MIN_ECOSYSTEM_SHARE))
+                            .fillMaxHeight()
+                            .background(colors[index % colors.size]),
+                    )
+                }
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.itemGap),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                shares.forEach { share ->
+                    Text(
+                        text = stringResource(
+                            R.string.profile_ecosystem_share,
+                            share.ecosystem.displayName(),
+                            (share.share * 100f).roundToInt(),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val MIN_ECOSYSTEM_SHARE = 0.04f
+private val BACKGROUND_BLUR = 16.dp
+
+private fun OdometerTier.labelRes(): Int = when (this) {
+    OdometerTier.PRIMER_PASO -> R.string.profile_tier_first_step
+    OdometerTier.TROCHA_DE_BARRIO -> R.string.profile_tier_neighborhood
+    OdometerTier.SENDERO_DE_SEMANA -> R.string.profile_tier_weekend
+    OdometerTier.GUIA_DE_TROCHA -> R.string.profile_tier_guide
+    OdometerTier.VETERANO_DEL_ISTMO -> R.string.profile_tier_veteran
+    OdometerTier.A_PURO_PULMON -> R.string.profile_tier_gold
+}
+
+private fun PassportBadge.labelRes(): Int = when (this) {
+    PassportBadge.FIRST_STEP -> R.string.profile_badge_first_step
+    PassportBadge.A_PURO_PULMON -> R.string.profile_badge_gold
+    PassportBadge.CAZADOR_DE_AMANECERES -> R.string.profile_badge_dawn
+    PassportBadge.DOS_OCEANOS -> R.string.profile_badge_oceans
+    PassportBadge.A_PRUEBA_DE_BAJAREQUE -> R.string.profile_badge_rain
+}
+
+private const val METERS_PER_KILOMETER = 1_000.0f
 
 @Composable
 private fun ExpeditionStatsCard(stats: ExpeditionStats) {
@@ -478,7 +878,7 @@ private fun SettingsSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
         val haptics = rememberPanamaHaptics()
         Column(

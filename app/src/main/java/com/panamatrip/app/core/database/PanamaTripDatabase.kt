@@ -21,6 +21,7 @@ import com.panamatrip.app.core.database.entity.DestinationEntity
 import com.panamatrip.app.core.database.entity.GuideEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.PostLikeEntity
+import com.panamatrip.app.core.database.entity.PostMediaEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.RoutePlanEntity
 import com.panamatrip.app.core.database.entity.TrackEntity
@@ -32,6 +33,7 @@ import com.panamatrip.app.core.database.entity.VehicleReportEntity
         DestinationEntity::class,
         VehicleReportEntity::class,
         PostEntity::class,
+        PostMediaEntity::class,
         PostLikeEntity::class,
         CommentEntity::class,
         CollectionEntity::class,
@@ -64,7 +66,7 @@ abstract class PanamaTripDatabase : RoomDatabase() {
     abstract fun trackDao(): TrackDao
 
     companion object {
-        const val VERSION = 4
+        const val VERSION = 6
         private const val DATABASE_NAME = "panama_trip.db"
 
         /**
@@ -194,13 +196,72 @@ abstract class PanamaTripDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v4 → v5: carrusel multi-media por publicación y evidencia de caminata
+         * válida (límite humano de 15 km/h + podómetro) en cada track.
+         *
+         * Los posts existentes conservan su foto: se copia `imageUrl` a
+         * `post_media` como primera imagen del carrusel. Los tracks previos
+         * quedan como históricos (`evidenceAvailable = 0`) con su distancia
+         * original intacta para que el odómetro no borre ni infle datos.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `post_media` (" +
+                        "`id` TEXT NOT NULL, `postId` TEXT NOT NULL, `uri` TEXT NOT NULL, " +
+                        "`mimeType` TEXT NOT NULL, `position` INTEGER NOT NULL, " +
+                        "`width` INTEGER NOT NULL, `height` INTEGER NOT NULL, " +
+                        "`durationMillis` INTEGER, PRIMARY KEY(`id`))",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_post_media_postId` " +
+                        "ON `post_media` (`postId`)",
+                )
+                db.execSQL(
+                    "INSERT INTO `post_media` (`id`, `postId`, `uri`, `mimeType`, " +
+                        "`position`, `width`, `height`, `durationMillis`) " +
+                        "SELECT 'legacy-' || `id`, `id`, `imageUrl`, 'image/*', 0, 0, 0, NULL " +
+                        "FROM `posts` WHERE `imageUrl` <> ''",
+                )
+                db.execSQL("ALTER TABLE `posts` ADD COLUMN `trackId` TEXT")
+                db.execSQL(
+                    "ALTER TABLE `tracks` ADD COLUMN `validWalkingDistanceMeters` " +
+                        "INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "ALTER TABLE `tracks` ADD COLUMN `stepCount` INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "ALTER TABLE `tracks` ADD COLUMN `evidenceAvailable` " +
+                        "INTEGER NOT NULL DEFAULT 0",
+                )
+            }
+        }
+
+        /**
+         * v5 → v6: cobertura móvil por operadora en el catálogo editorial.
+         * Son columnas nuevas con default, así que ningún dato del usuario
+         * (tracks, rutas, fotos) se toca.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `destinations` ADD COLUMN `movilSignal` TEXT NOT NULL DEFAULT 'MEDIUM'",
+                )
+                db.execSQL(
+                    "ALTER TABLE `destinations` ADD COLUMN `tigoSignal` TEXT NOT NULL DEFAULT 'MEDIUM'",
+                )
+            }
+        }
+
         fun build(context: Context): PanamaTripDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 PanamaTripDatabase::class.java,
                 DATABASE_NAME,
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigrationOnDowngrade()
                 .build()
     }

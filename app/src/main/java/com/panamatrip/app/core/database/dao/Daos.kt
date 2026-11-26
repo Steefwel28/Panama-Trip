@@ -1,9 +1,12 @@
 package com.panamatrip.app.core.database.dao
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Relation
+import androidx.room.Transaction
 import com.panamatrip.app.core.database.entity.CollectionEntity
 import com.panamatrip.app.core.database.entity.CollectionPostEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
@@ -11,6 +14,7 @@ import com.panamatrip.app.core.database.entity.DestinationEntity
 import com.panamatrip.app.core.database.entity.GuideEntity
 import com.panamatrip.app.core.database.entity.PostEntity
 import com.panamatrip.app.core.database.entity.PostLikeEntity
+import com.panamatrip.app.core.database.entity.PostMediaEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.RoutePlanEntity
 import com.panamatrip.app.core.database.entity.TrackEntity
@@ -26,6 +30,13 @@ data class CommentCountProjection(
 data class CollectionEntryProjection(
     val collectionId: String,
     val postId: String,
+)
+
+/** Publicación con su carrusel ordenado; la cabecera sigue en `posts`. */
+data class PostWithMedia(
+    @Embedded val post: PostEntity,
+    @Relation(parentColumn = "id", entityColumn = "postId")
+    val media: List<PostMediaEntity>,
 )
 
 @Dao
@@ -63,6 +74,10 @@ interface PostDao {
     @Query("SELECT * FROM posts ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<PostEntity>>
 
+    @Transaction
+    @Query("SELECT * FROM posts ORDER BY createdAt DESC")
+    fun observeAllWithMedia(): Flow<List<PostWithMedia>>
+
     @Query("SELECT * FROM posts WHERE id = :id")
     suspend fun getById(id: String): PostEntity?
 
@@ -80,6 +95,9 @@ interface PostDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPost(post: PostEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMedia(items: List<PostMediaEntity>)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertLike(like: PostLikeEntity)

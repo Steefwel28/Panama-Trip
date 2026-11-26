@@ -52,6 +52,18 @@ interface PreferencesRepository {
     suspend fun setPreferredVehicle(vehicle: VehicleType?)
     suspend fun setActiveRoute(destinationId: String?)
     suspend fun setCashAlertsEnabled(enabled: Boolean) = Unit
+
+    /** Cierra onboarding de forma atómica; cancelar nunca marca el flag. */
+    suspend fun completeOnboarding(name: String, handle: String, bio: String, guest: Boolean) = Unit
+
+    /** Recupera el perfil local; false si este teléfono no tiene cuenta guardada. */
+    suspend fun signInLocal(): Boolean = false
+
+    suspend fun enterAsGuest() = Unit
+    suspend fun updateProfile(name: String, handle: String, bio: String) = Unit
+    suspend fun setAvatarPath(path: String?) = Unit
+    suspend fun setBannerPath(path: String?) = Unit
+
     suspend fun recordLike(destination: com.panamatrip.app.domain.model.Destination)
     suspend fun recordSave(destination: com.panamatrip.app.domain.model.Destination)
     suspend fun recordView(destination: com.panamatrip.app.domain.model.Destination)

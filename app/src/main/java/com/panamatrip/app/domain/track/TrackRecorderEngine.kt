@@ -27,6 +27,7 @@ class TrackRecorderEngine(
     private var pausedAtElapsedMillis: Long? = null
     private var accumulatedPauseMillis = 0L
     private var currentSegmentIndex = 0
+    private var stepCount = 0
 
     fun addSample(sample: TrackSample, nowElapsedMillis: Long): Boolean {
         if (status != RecorderStatus.RECORDING) return false
@@ -86,7 +87,15 @@ class TrackRecorderEngine(
             averageSpeedKmh = TrackMetricsCalculator.averageSpeedKmh(distance, activeMillis),
             elevationGainMeters = ElevationGainCalculator.gainMeters(points),
             pointCount = points.size,
+            validWalkingDistanceMeters =
+                TrackMetricsCalculator.validWalkingDistanceMeters(points),
+            stepCount = stepCount,
         )
+    }
+
+    /** Pasos acumulados del podómetro desde el inicio de esta grabación. */
+    fun updateStepCount(steps: Int) {
+        stepCount = steps.coerceAtLeast(0)
     }
 
     fun finish(nowElapsedMillis: Long, finishedAtEpochMillis: Long): RecordedTrack {
@@ -103,6 +112,9 @@ class TrackRecorderEngine(
             elevationGainMeters = finalSnapshot.elevationGainMeters,
             pointCount = finalSnapshot.pointCount,
             points = points.toList(),
+            validWalkingDistanceMeters = finalSnapshot.validWalkingDistanceMeters,
+            stepCount = finalSnapshot.stepCount,
+            evidenceAvailable = true,
         )
     }
 

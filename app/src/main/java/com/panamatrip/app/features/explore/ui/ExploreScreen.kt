@@ -1,5 +1,10 @@
 package com.panamatrip.app.features.explore.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,16 +26,29 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.panamatrip.app.core.designsystem.theme.PanamaMotion
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panamatrip.app.R
@@ -70,6 +88,15 @@ fun ExploreRoute(
         viewModel.notices.collect { notice ->
             snackbarHostState.showSnackbar(resources.getString(notice.noticeTextRes()))
         }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshUserLocation()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     ExploreScreen(
@@ -121,13 +148,55 @@ fun ExploreScreen(
     onPlanRoute: (Destination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        ExploreHeader(
-            guestMode = (state as? ExploreUiState.Content)?.guestMode ?: true,
-            onOpenRecorder = onOpenRecorder,
-            onNewPost = onNewPost,
-            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
-        )
+    var headerVisible by rememberSaveable { mutableStateOf(true) }
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                // Solo vertical: los gestos horizontales del feed pasan intactos.
+                if (source == NestedScrollSource.Drag) {
+                    if (available.y < -HEADER_SCROLL_THRESHOLD && headerVisible) {
+                        headerVisible = false
+                    } else if (available.y > HEADER_SCROLL_THRESHOLD && !headerVisible) {
+                        headerVisible = true
+                    }
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(nestedScrollConnection),
+    ) {
+        AnimatedVisibility(
+            visible = headerVisible,
+            enter = expandVertically(animationSpec = PanamaMotion.spatial()) +
+                slideInVertically(animationSpec = PanamaMotion.spatial()) { it / 3 },
+            exit = shrinkVertically(animationSpec = PanamaMotion.spatial()) +
+                slideOutVertically(animationSpec = PanamaMotion.spatial()) { it / 3 },
+        ) {
+            Column {
+                ExploreHeader(
+                    guestMode = (state as? ExploreUiState.Content)?.guestMode ?: false,
+                    onOpenRecorder = onOpenRecorder,
+                    onNewPost = onNewPost,
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                )
+                if (state is ExploreUiState.Content) {
+                    ExploreSegmentedControl(
+                        selectedTab = state.tab,
+                        onSelectTab = onSelectTab,
+                        modifier = Modifier.padding(
+                            start = Dimens.cardPadding,
+                            end = Dimens.cardPadding,
+                            bottom = Dimens.itemGap,
+                        ),
+                    )
+                }
+            }
+        }
 
         when (state) {
             ExploreUiState.Loading -> ScreenLoading()
@@ -143,16 +212,6 @@ fun ExploreScreen(
                 onSelectTab = onSelectTab,
             )
             is ExploreUiState.Content -> {
-                ExploreSegmentedControl(
-                    selectedTab = state.tab,
-                    onSelectTab = onSelectTab,
-                    modifier = Modifier.padding(
-                        start = Dimens.cardPadding,
-                        end = Dimens.cardPadding,
-                        top = Dimens.itemGap,
-                        bottom = Dimens.itemGap,
-                    ),
-                )
                 when (state.tab) {
                     ExploreTab.COMMUNITY -> CommunityFeed(
                         posts = state.posts,
@@ -212,62 +271,56 @@ private fun ExploreHeader(
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberPanamaHaptics()
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.cardPadding, vertical = Dimens.itemGap),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+            .padding(horizontal = Dimens.cardPadding, vertical = Dimens.tightGap),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        FilledTonalIconButton(
+            onClick = {
+                haptics.confirm()
+                onOpenRecorder()
+            },
+            modifier = Modifier.size(Dimens.minimumTouchTarget),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.DirectionsWalk,
+                contentDescription = stringResource(R.string.home_recorder_action),
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
                 text = stringResource(R.string.home_brand),
-                style = MaterialTheme.typography.displaySmall.copy(
+                style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Black,
-                    letterSpacing = (-1.6).sp,
+                    letterSpacing = (-1.2).sp,
                     fontStyle = FontStyle.Italic,
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            if (guestMode) {
+                TonalTag(
+                    text = stringResource(R.string.explore_guest_mode),
+                    tone = Tone.Neutral,
+                )
+            }
         }
-        if (guestMode) {
-            TonalTag(
-                text = stringResource(R.string.explore_guest_mode),
-                tone = Tone.Neutral,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        FilledIconButton(
+            onClick = {
+                haptics.confirm()
+                onNewPost()
+            },
+            modifier = Modifier.size(Dimens.minimumTouchTarget),
         ) {
-            FilledTonalIconButton(
-                onClick = {
-                    haptics.confirm()
-                    onOpenRecorder()
-                },
-                modifier = Modifier.size(Dimens.minimumTouchTarget),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.DirectionsWalk,
-                    contentDescription = stringResource(R.string.home_recorder_action),
-                )
-            }
-            FilledIconButton(
-                onClick = {
-                    haptics.confirm()
-                    onNewPost()
-                },
-                modifier = Modifier.size(Dimens.minimumTouchTarget),
-            ) {
-                Icon(
-                    imageVector = PanamaIcons.Plus,
-                    contentDescription = stringResource(R.string.home_compose_action),
-                )
-            }
+            Icon(
+                imageVector = PanamaIcons.Plus,
+                contentDescription = stringResource(R.string.home_compose_action),
+            )
         }
     }
 }
@@ -325,3 +378,6 @@ private fun ExploreSegmentedControl(
         }
     }
 }
+
+/** Deslizamiento mínimo para plegar/desplegar la cabecera sin nervios. */
+private const val HEADER_SCROLL_THRESHOLD = 6f

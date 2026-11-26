@@ -46,6 +46,10 @@ data class TrackSnapshot(
     val averageSpeedKmh: Double,
     val elevationGainMeters: Int,
     val pointCount: Int,
+    /** Metros dentro del límite humano (≤ 15 km/h); base del odómetro. */
+    val validWalkingDistanceMeters: Int = distanceMeters,
+    /** Pasos del podómetro; 0 cuando el sensor no está disponible. */
+    val stepCount: Int = 0,
 )
 
 /** Recorrido terminado y listo para persistirse como trofeo. */
@@ -62,6 +66,12 @@ data class RecordedTrack(
     val pointCount: Int,
     val points: List<TrackPoint> = emptyList(),
     val status: TrackStatus = TrackStatus.COMPLETED,
+    /** Metros caminados dentro del límite humano; excluye tramos > 15 km/h. */
+    val validWalkingDistanceMeters: Int = distanceMeters,
+    /** Pasos medidos por el podómetro; 0 si el sensor no está disponible. */
+    val stepCount: Int = 0,
+    /** `false` en tracks históricos que no registraron evidencia de velocidad. */
+    val evidenceAvailable: Boolean = false,
 )
 
 /** Progreso que se persiste por lote mientras el GPS sigue capturando. */

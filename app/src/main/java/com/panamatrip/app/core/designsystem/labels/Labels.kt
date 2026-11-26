@@ -48,6 +48,7 @@ fun AccessStatus.displayName(): String = stringResource(
         AccessStatus.CLEAR -> R.string.access_clear
         AccessStatus.CAUTION -> R.string.access_caution
         AccessStatus.BLOCKED -> R.string.access_blocked
+        AccessStatus.CLOSED -> R.string.access_closed
     },
 )
 

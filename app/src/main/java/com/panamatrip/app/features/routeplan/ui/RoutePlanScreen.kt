@@ -1,5 +1,9 @@
 package com.panamatrip.app.features.routeplan.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.panamatrip.app.R
@@ -65,6 +70,41 @@ fun RoutePlanRoute(
         }
     }
 
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants ->
+        if (grants.values.any { it }) {
+            viewModel.selectOrigin(OriginMode.CURRENT_LOCATION)
+        } else {
+            viewModel.onLocationDenied()
+        }
+    }
+
+    val onSelectOrigin: (OriginMode) -> Unit = { mode ->
+        if (mode != OriginMode.CURRENT_LOCATION) {
+            viewModel.selectOrigin(mode)
+        } else {
+            val fine = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED
+            val coarse = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (fine || coarse) {
+                viewModel.selectOrigin(OriginMode.CURRENT_LOCATION)
+            } else {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    ),
+                )
+            }
+        }
+    }
+
     RoutePlanScreen(
         state = state,
         onRetry = viewModel::retry,
@@ -81,7 +121,7 @@ fun RoutePlanRoute(
         onSelectFuel = viewModel::selectFuel,
         onSetSurcharge = viewModel::setSurcharge,
         onSelectDeparture = viewModel::selectDeparture,
-        onSelectOrigin = viewModel::selectOrigin,
+        onSelectOrigin = onSelectOrigin,
         onSavePlan = viewModel::saveCurrentPlan,
         onOpenRecorder = onOpenRecorder,
     )

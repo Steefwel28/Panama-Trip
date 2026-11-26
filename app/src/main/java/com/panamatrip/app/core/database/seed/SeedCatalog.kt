@@ -2,6 +2,7 @@ package com.panamatrip.app.core.database.seed
 
 import com.panamatrip.app.domain.model.AccessStatus
 import com.panamatrip.app.domain.model.Ecosystem
+import com.panamatrip.app.domain.model.SignalLevel
 import com.panamatrip.app.domain.model.TerrainStatus
 import com.panamatrip.app.domain.model.VehicleType
 
@@ -478,6 +479,8 @@ data class SeedDestination(
     val elevationGainMeters: Int,
     val recommendedVehicle: VehicleType,
     val featuredOrder: Int,
+    val movilSignal: SignalLevel = SignalLevel.MEDIUM,
+    val tigoSignal: SignalLevel = SignalLevel.LOW,
 )
 
 data class SeedVehicleReport(

@@ -15,7 +15,11 @@ import com.panamatrip.app.domain.model.VehicleType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** Estado local del invitado: origen, filtro preferido, ruta activa y afinidad. */
+/**
+ * Estado local del invitado: origen, filtro preferido, ruta activa, afinidad y
+ * perfil offline-first. `guestMode` es la única fuente de verdad del invitado:
+ * el onboarding escribe aquí, no en una preferencia paralela.
+ */
 data class UserPreferences(
     val guestMode: Boolean = true,
     val preferredVehicle: VehicleType? = null,
@@ -23,6 +27,12 @@ data class UserPreferences(
     val activeRouteDestinationId: String? = null,
     val cashAlertsEnabled: Boolean = true,
     val affinity: AffinitySnapshot = AffinitySnapshot(),
+    val hasCompletedOnboarding: Boolean = false,
+    val userName: String = "",
+    val userHandle: String = "",
+    val userBio: String = "",
+    val avatarPath: String? = null,
+    val bannerPath: String? = null,
 ) {
     companion object {
         val DEFAULT_ORIGIN = GeoPoint(latitude = 8.9824, longitude = -79.5199)
@@ -48,7 +58,81 @@ class PreferencesStore(private val dataStore: DataStore<Preferences>) {
                 ecosystemScores = prefs[KEY_AFFINITY_ECOSYSTEMS],
                 interactions = prefs[KEY_AFFINITY_INTERACTIONS] ?: 0,
             ),
+            hasCompletedOnboarding = prefs[KEY_ONBOARDING_DONE] ?: false,
+            userName = prefs[KEY_USER_NAME].orEmpty(),
+            userHandle = prefs[KEY_USER_HANDLE].orEmpty(),
+            userBio = prefs[KEY_USER_BIO].orEmpty(),
+            avatarPath = prefs[KEY_AVATAR_PATH],
+            bannerPath = prefs[KEY_BANNER_PATH],
         )
+    }
+
+    /**
+     * Cierra el onboarding en una sola escritura atómica. Cancelar la pantalla
+     * no llama aquí, así que `hasCompletedOnboarding` sigue en false.
+     */
+    suspend fun completeOnboarding(
+        name: String,
+        handle: String,
+        bio: String,
+        guest: Boolean,
+    ) {
+        dataStore.edit { prefs ->
+            if (guest) {
+                prefs[KEY_GUEST_MODE] = true
+            } else {
+                prefs[KEY_GUEST_MODE] = false
+                prefs[KEY_USER_NAME] = name.trim()
+                prefs[KEY_USER_HANDLE] = normalizeHandle(handle)
+                prefs[KEY_USER_BIO] = bio.trim()
+            }
+            prefs[KEY_ONBOARDING_DONE] = true
+        }
+    }
+
+    /**
+     * «Iniciar sesión» local: recupera el perfil guardado en este teléfono.
+     * Devuelve false si nunca hubo un perfil registrado.
+     */
+    suspend fun signInLocal(): Boolean {
+        var found = false
+        dataStore.edit { prefs ->
+            found = !prefs[KEY_USER_HANDLE].isNullOrBlank()
+            if (found) prefs[KEY_GUEST_MODE] = false
+        }
+        return found
+    }
+
+    suspend fun enterAsGuest() {
+        dataStore.edit { prefs ->
+            prefs[KEY_GUEST_MODE] = true
+            prefs[KEY_ONBOARDING_DONE] = true
+        }
+    }
+
+    suspend fun updateProfile(name: String, handle: String, bio: String) {
+        dataStore.edit { prefs ->
+            prefs[KEY_USER_NAME] = name.trim()
+            prefs[KEY_USER_HANDLE] = normalizeHandle(handle)
+            prefs[KEY_USER_BIO] = bio.trim()
+        }
+    }
+
+    suspend fun setAvatarPath(path: String?) {
+        dataStore.edit { prefs ->
+            if (path == null) prefs.remove(KEY_AVATAR_PATH) else prefs[KEY_AVATAR_PATH] = path
+        }
+    }
+
+    suspend fun setBannerPath(path: String?) {
+        dataStore.edit { prefs ->
+            if (path == null) prefs.remove(KEY_BANNER_PATH) else prefs[KEY_BANNER_PATH] = path
+        }
+    }
+
+    private fun normalizeHandle(raw: String): String {
+        val trimmed = raw.trim().removePrefix("@").lowercase()
+        return if (trimmed.isEmpty()) "" else "@$trimmed"
     }
 
     suspend fun setPreferredVehicle(vehicle: VehicleType?) {
@@ -110,5 +194,11 @@ class PreferencesStore(private val dataStore: DataStore<Preferences>) {
         val KEY_AFFINITY_DESTINATIONS = stringPreferencesKey("affinity_destinations")
         val KEY_AFFINITY_ECOSYSTEMS = stringPreferencesKey("affinity_ecosystems")
         val KEY_AFFINITY_INTERACTIONS = intPreferencesKey("affinity_interactions")
+        val KEY_ONBOARDING_DONE = booleanPreferencesKey("has_completed_onboarding")
+        val KEY_USER_NAME = stringPreferencesKey("user_name")
+        val KEY_USER_HANDLE = stringPreferencesKey("user_handle")
+        val KEY_USER_BIO = stringPreferencesKey("user_bio")
+        val KEY_AVATAR_PATH = stringPreferencesKey("avatar_path")
+        val KEY_BANNER_PATH = stringPreferencesKey("banner_path")
     }
 }

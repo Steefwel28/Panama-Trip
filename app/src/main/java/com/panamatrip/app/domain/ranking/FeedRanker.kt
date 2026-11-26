@@ -102,6 +102,10 @@ object VehicleTrafficLight {
         if (verdicts.isEmpty()) {
             return VehicleAccessSummary(vehicle, AccessStatus.CAUTION, reports = 0)
         }
+        // Un cierre reportado manda sobre el promedio: el destino no está apto.
+        if (verdicts.any { it == AccessStatus.CLOSED }) {
+            return VehicleAccessSummary(vehicle, AccessStatus.CLOSED, reports = verdicts.size)
+        }
         val average = verdicts.sumOf { verdictScore(it) }.toDouble() / verdicts.size
         val status = when {
             average >= CLEAR_THRESHOLD -> AccessStatus.CLEAR
@@ -115,6 +119,7 @@ object VehicleTrafficLight {
         AccessStatus.CLEAR -> 1
         AccessStatus.CAUTION -> 0
         AccessStatus.BLOCKED -> -1
+        AccessStatus.CLOSED -> 0
     }
 }
 

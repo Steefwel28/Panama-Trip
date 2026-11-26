@@ -161,14 +161,18 @@ internal fun OriginSelector(
                 }
             }
             Text(
-                text = stringResource(
-                    if (content.originMode == OriginMode.CURRENT_LOCATION) {
-                        R.string.route_origin_current_value
-                    } else {
-                        R.string.route_origin_custom_value
-                    },
-                    content.origin.formatted,
-                ),
+                text = if (content.isLocatingOrigin) {
+                    stringResource(R.string.route_origin_locating)
+                } else {
+                    stringResource(
+                        if (content.originMode == OriginMode.CURRENT_LOCATION) {
+                            R.string.route_origin_current_value
+                        } else {
+                            R.string.route_origin_custom_value
+                        },
+                        content.origin.formatted,
+                    )
+                },
                 style = MetricType.Small,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

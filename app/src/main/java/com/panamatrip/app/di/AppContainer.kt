@@ -12,6 +12,7 @@ import com.panamatrip.app.data.repository.CommunityRepositoryImpl
 import com.panamatrip.app.data.repository.DestinationRepositoryImpl
 import com.panamatrip.app.data.repository.GuideRepositoryImpl
 import com.panamatrip.app.data.photo.PhotoInspector
+import com.panamatrip.app.data.photo.RecentMediaScanner
 import com.panamatrip.app.data.repository.PreferencesRepositoryImpl
 import com.panamatrip.app.data.repository.RoutePlanRepositoryImpl
 import com.panamatrip.app.data.repository.TrackRepositoryImpl
@@ -86,6 +87,8 @@ class AppContainer(context: Context) {
     }
 
     val photoInspector: PhotoInspector by lazy { PhotoInspector(appContext) }
+
+    val recentMediaScanner: RecentMediaScanner by lazy { RecentMediaScanner(appContext) }
 
     val locationProvider: DeviceLocationProvider by lazy { DeviceLocationProvider(appContext) }
 

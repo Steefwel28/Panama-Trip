@@ -39,6 +39,7 @@ sealed interface RoutePlanUiState {
         val destination: Destination,
         val origin: GeoPoint,
         val originMode: OriginMode,
+        val isLocatingOrigin: Boolean = false,
         val vehicle: VehicleType,
         val fuelType: FuelType,
         val surchargeEnabled: Boolean,

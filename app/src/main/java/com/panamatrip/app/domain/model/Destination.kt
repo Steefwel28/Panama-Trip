@@ -20,6 +20,8 @@ data class Destination(
     val elevationGainMeters: Int,
     val recommendedVehicle: VehicleType,
     val vehicleAccess: Map<VehicleType, VehicleAccessSummary>,
+    /** Cobertura editorial por operadora; vacío en destinos sin dato. */
+    val carrierSignal: Map<Carrier, SignalLevel> = emptyMap(),
     val averageRating: Double,
     val reviewCount: Int,
     val featuredOrder: Int,

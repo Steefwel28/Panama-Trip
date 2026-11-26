@@ -104,6 +104,25 @@ fun SavedScreen(
                 modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                 onCreateCollection = { showCreateDialog = true },
             )
+        } else {
+            // Dentro de Perfil la cabecera se oculta, pero crear colecciones
+            // debe seguir siendo una acción visible y no un gesto escondido.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.cardPadding, vertical = Dimens.tightGap),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = { showCreateDialog = true }) {
+                    Icon(
+                        imageVector = PanamaIcons.Plus,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = stringResource(R.string.saved_new_collection))
+                }
+            }
         }
 
         when (state) {

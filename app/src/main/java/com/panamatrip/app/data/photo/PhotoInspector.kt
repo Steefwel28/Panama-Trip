@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -27,6 +28,18 @@ import kotlinx.coroutines.withContext
 data class PreparedPhoto(
     val fileUri: String,
     val metadata: ExifMetadata,
+    val width: Int = 0,
+    val height: Int = 0,
+)
+
+/** Video copiado al almacenamiento interno con su proporción y duración. */
+data class PreparedVideo(
+    val fileUri: String,
+    val mimeType: String,
+    val width: Int,
+    val height: Int,
+    val durationMillis: Long,
+    val capturedAtEpochMillis: Long? = null,
 )
 
 /**
@@ -44,9 +57,64 @@ class PhotoInspector(
 
     suspend fun preparePhoto(uri: Uri): PreparedPhoto = withContext(ioDispatcher) {
         val rawExif = readRawExif(uri)
-        val compressedUri = compressToPendingUploads(uri, rawExif.orientation)
-        PreparedPhoto(fileUri = compressedUri, metadata = rawExif.metadata)
+        val compressed = compressToPendingUploads(uri, rawExif.orientation)
+        PreparedPhoto(
+            fileUri = compressed.first,
+            metadata = rawExif.metadata,
+            width = compressed.second,
+            height = compressed.third,
+        )
     }
+
+    /**
+     * Copia el video al almacenamiento interno para que el borrador sobreviva
+     * reinicios y permisos temporales del picker. La E/S corre en [ioDispatcher].
+     */
+    suspend fun prepareVideo(uri: Uri): PreparedVideo = withContext(ioDispatcher) {
+        val mime = mimeTypeOf(uri)
+        val extension = when {
+            mime.contains("webm") -> "webm"
+            mime.contains("3gpp") -> "3gp"
+            mime.contains("quicktime") -> "mov"
+            else -> "mp4"
+        }
+        val directory = File(context.filesDir, PENDING_UPLOADS_DIR).apply { mkdirs() }
+        val target = File(directory, "post-${UUID.randomUUID()}.$extension")
+        val copied = context.contentResolver.openInputStream(uri)?.use { input ->
+            target.outputStream().use { output -> input.copyTo(output) }
+        }
+        require(copied != null && target.length() > 0L) { "El video no se pudo copiar" }
+
+        val retriever = MediaMetadataRetriever()
+        return@withContext try {
+            retriever.setDataSource(target.absolutePath)
+            val rawWidth = retriever
+                .extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                ?.toIntOrNull() ?: 0
+            val rawHeight = retriever
+                .extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                ?.toIntOrNull() ?: 0
+            val rotation = retriever
+                .extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                ?.toIntOrNull() ?: 0
+            val rotated = rotation == 90 || rotation == 270
+            PreparedVideo(
+                fileUri = Uri.fromFile(target).toString(),
+                mimeType = mime,
+                width = if (rotated) rawHeight else rawWidth,
+                height = if (rotated) rawWidth else rawHeight,
+                durationMillis = retriever
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                    ?.toLongOrNull() ?: 0L,
+            )
+        } finally {
+            retriever.release()
+        }
+    }
+
+    fun mimeTypeOf(uri: Uri): String =
+        context.contentResolver.getType(uri)
+            ?: if (uri.toString().endsWith(".mp4", ignoreCase = true)) "video/mp4" else "image/jpeg"
 
     suspend fun readExif(uri: Uri): ExifMetadata = withContext(ioDispatcher) {
         readRawExif(uri).metadata
@@ -88,7 +156,8 @@ class PhotoInspector(
         )
     }
 
-    private fun compressToPendingUploads(uri: Uri, orientation: Int): String {
+    /** Devuelve uri comprimida + ancho + alto ya orientados. */
+    private fun compressToPendingUploads(uri: Uri, orientation: Int): Triple<String, Int, Int> {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         openStream(uri)?.use { stream ->
             BitmapFactory.decodeStream(stream, null, bounds)
@@ -115,10 +184,12 @@ class PhotoInspector(
                 "No se pudo comprimir la foto"
             }
         }
+        val width = oriented.width
+        val height = oriented.height
         if (oriented !== scaled) oriented.recycle()
         if (scaled !== decoded) scaled.recycle()
         decoded.recycle()
-        return Uri.fromFile(target).toString()
+        return Triple(Uri.fromFile(target).toString(), width, height)
     }
 
     /**

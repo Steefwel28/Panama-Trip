@@ -3,6 +3,7 @@ package com.panamatrip.app.features.trackrecorder.ui
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,16 +66,19 @@ import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.RecorderStatus
+import kotlinx.coroutines.flow.filterNotNull
 
 @Composable
 fun TrackRecorderRoute(
     container: AppContainer,
     onBack: () -> Unit,
+    onTrackSaved: (String) -> Unit = {},
 ) {
     val viewModel: TrackRecorderViewModel = viewModel(
         factory = TrackRecorderViewModel.factory(container),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val savedTrackId by viewModel.savedTrackId.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
     val resources = LocalResources.current
     val context = LocalContext.current
@@ -87,10 +91,20 @@ fun TrackRecorderRoute(
         }
     }
 
+    // Al cerrar la grabación se abre el compositor con la ruta y el material
+    // capturado durante el recorrido ya cargados.
+    LaunchedEffect(viewModel) {
+        viewModel.savedTrackId.filterNotNull().collect { trackId ->
+            viewModel.consumeSavedTrack()
+            onTrackSaved(trackId)
+        }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants ->
-        val granted = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+        val granted = context.hasLocationPermission() ||
+            grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         permissionDenied = !granted
         if (granted) viewModel.start()
@@ -102,14 +116,23 @@ fun TrackRecorderRoute(
         onBack = onBack,
         onStart = {
             haptics.confirm()
-            if (context.hasLocationPermission()) {
+            val needsLocation = !context.hasLocationPermission()
+            val needsSteps = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACTIVITY_RECOGNITION,
+                ) != PackageManager.PERMISSION_GRANTED
+            if (!needsLocation && !needsSteps) {
                 permissionDenied = false
                 viewModel.start()
             } else {
                 permissionLauncher.launch(
                     buildList {
-                        add(Manifest.permission.ACCESS_FINE_LOCATION)
-                        add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        if (needsLocation) {
+                            add(Manifest.permission.ACCESS_FINE_LOCATION)
+                            add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        }
+                        if (needsSteps) add(Manifest.permission.ACTIVITY_RECOGNITION)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             add(Manifest.permission.POST_NOTIFICATIONS)
                         }
@@ -315,6 +338,9 @@ private fun TrackRecorderContent(
         }
 
         if (active != null) {
+            item(key = "map") {
+                LiveTrackMap(path = active.path)
+            }
             item(key = "controls") {
                 RecorderControls(
                     active = active,
@@ -487,6 +513,22 @@ private fun ActiveTrackCard(active: ActiveTrackUi) {
                 TrackStatTile(
                     label = stringResource(R.string.recorder_stat_elevation),
                     value = elevationLabel(active.elevationGainMeters),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.itemGap)) {
+                TrackStatTile(
+                    label = stringResource(R.string.recorder_stat_valid_distance),
+                    value = distanceLabel(active.validWalkingDistanceMeters),
+                    modifier = Modifier.weight(1f),
+                )
+                TrackStatTile(
+                    label = stringResource(R.string.recorder_stat_steps),
+                    value = if (active.stepCount > 0) {
+                        active.stepCount.toString()
+                    } else {
+                        stringResource(R.string.recorder_steps_unavailable)
+                    },
                     modifier = Modifier.weight(1f),
                 )
             }

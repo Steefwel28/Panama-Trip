@@ -142,6 +142,7 @@ class TrackRecorderViewModelTest {
     ) : TrackRecorderController {
         override val session = MutableStateFlow(initial)
         override val events = MutableSharedFlow<RecorderEvent>(extraBufferCapacity = 4)
+        override val path = MutableStateFlow<List<com.panamatrip.app.domain.model.GeoPoint>>(emptyList())
 
         override fun start(destinationId: String?, destinationName: String?) = Unit
 

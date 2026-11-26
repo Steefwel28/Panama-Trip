@@ -35,8 +35,8 @@ import com.panamatrip.app.features.saved.ui.SavedUiState
 import com.panamatrip.app.features.trackrecorder.ui.ActiveTrackUi
 import com.panamatrip.app.features.trackrecorder.ui.RecordedTrackUi
 import com.panamatrip.app.features.trackrecorder.ui.TrackRecorderUiState
+import com.panamatrip.app.features.postcomposer.ui.ComposerMediaUi
 import com.panamatrip.app.features.postcomposer.ui.PostComposerUiState
-import com.panamatrip.app.features.postcomposer.ui.SelectedPhotoUi
 import com.panamatrip.app.domain.photo.ExifCheck
 import com.panamatrip.app.domain.photo.ExifMetadata
 import com.panamatrip.app.domain.photo.ExifVerification
@@ -285,18 +285,29 @@ object PreviewFixtures {
             destinations = destinations,
             selectedDestination = destination,
             caption = "Subida con neblina y el sendero mojado, pero la vista desde la cima compensa cada paso.",
-            photo = SelectedPhotoUi(
-                fileUri = destination.heroImageUrl,
-                metadata = ExifMetadata(
-                    latitude = destination.attraction.latitude,
-                    longitude = destination.attraction.longitude,
-                    capturedAtEpochMillis = System.currentTimeMillis() - 2 * DAY_MILLIS,
-                ),
-                check = ExifCheck(
-                    verification = ExifVerification.VERIFIED_ON_SITE,
-                    distanceMeters = 420,
+            media = listOf(
+                ComposerMediaUi(
+                    id = "preview-media",
+                    fileUri = destination.heroImageUrl,
+                    mimeType = "image/jpeg",
+                    type = com.panamatrip.app.domain.model.PostMediaType.PHOTO,
+                    width = 1080,
+                    height = 1440,
+                    metadata = ExifMetadata(
+                        latitude = destination.attraction.latitude,
+                        longitude = destination.attraction.longitude,
+                        capturedAtEpochMillis = System.currentTimeMillis() - 2 * DAY_MILLIS,
+                    ),
+                    check = ExifCheck(
+                        verification = ExifVerification.VERIFIED_ON_SITE,
+                        distanceMeters = 420,
+                    ),
                 ),
             ),
+            searchQuery = "",
+            nearby = null,
+            tracks = emptyList(),
+            linkedTrackId = null,
             isBusy = false,
         )
     }

@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +20,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -35,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -53,13 +59,12 @@ import com.panamatrip.app.core.designsystem.component.TonalImage
 import com.panamatrip.app.core.designsystem.component.TonalTag
 import com.panamatrip.app.core.designsystem.component.Tone
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
-import com.panamatrip.app.core.designsystem.labels.dateLabel
 import com.panamatrip.app.core.designsystem.labels.distanceLabel
 import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.ui.LocalSnackbarHostState
 import com.panamatrip.app.core.ui.noticeTextRes
 import com.panamatrip.app.di.AppContainer
-import com.panamatrip.app.domain.model.Destination
+import com.panamatrip.app.domain.model.PostMediaType
 import com.panamatrip.app.domain.photo.ExifCheck
 import com.panamatrip.app.domain.photo.ExifVerification
 
@@ -68,9 +73,10 @@ fun PostComposerRoute(
     container: AppContainer,
     onBack: () -> Unit,
     onPublished: () -> Unit,
+    initialTrackId: String? = null,
 ) {
     val viewModel: PostComposerViewModel = viewModel(
-        factory = PostComposerViewModel.factory(container),
+        factory = PostComposerViewModel.factory(container, initialTrackId),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = LocalSnackbarHostState.current
@@ -89,18 +95,18 @@ fun PostComposerRoute(
     }
 
     val context = LocalContext.current
-    val photoPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri ->
-        uri?.let(viewModel::selectPhoto)
+    val mediaPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(MAX_MEDIA_ITEMS),
+    ) { uris ->
+        viewModel.addMedia(uris)
     }
     // ACCESS_MEDIA_LOCATION es permiso runtime: sin él MediaStore entrega la copia
     // redactada y el EXIF GPS desaparece. Si se niega, el picker sigue funcionando.
     val mediaLocationPermission = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) {
-        photoPicker.launch(
-            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+        mediaPicker.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo),
         )
     }
     val openPicker = {
@@ -112,8 +118,8 @@ fun PostComposerRoute(
         if (needsPermission) {
             mediaLocationPermission.launch(Manifest.permission.ACCESS_MEDIA_LOCATION)
         } else {
-            photoPicker.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            mediaPicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo),
             )
         }
     }
@@ -123,8 +129,11 @@ fun PostComposerRoute(
         onBack = onBack,
         onRetry = viewModel::retry,
         onSelectDestination = viewModel::selectDestination,
-        onPickPhoto = openPicker,
+        onAddMedia = openPicker,
+        onRemoveMedia = viewModel::removeMedia,
         onCaptionChange = viewModel::updateCaption,
+        onSearchChange = viewModel::updateSearch,
+        onSelectTrack = viewModel::selectTrack,
         onPublish = viewModel::publish,
     )
 }
@@ -135,8 +144,11 @@ fun PostComposerScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onSelectDestination: (String) -> Unit,
-    onPickPhoto: () -> Unit,
+    onAddMedia: () -> Unit,
+    onRemoveMedia: (String) -> Unit,
     onCaptionChange: (String) -> Unit,
+    onSearchChange: (String) -> Unit,
+    onSelectTrack: (String) -> Unit,
     onPublish: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -166,13 +178,15 @@ fun PostComposerScreen(
                 is PostComposerUiState.Content -> ComposerContent(
                     content = state,
                     onSelectDestination = onSelectDestination,
-                    onPickPhoto = onPickPhoto,
+                    onAddMedia = onAddMedia,
+                    onRemoveMedia = onRemoveMedia,
                     onCaptionChange = onCaptionChange,
+                    onSearchChange = onSearchChange,
+                    onSelectTrack = onSelectTrack,
                     onPublish = onPublish,
                 )
             }
         }
-
     }
 }
 
@@ -214,8 +228,11 @@ private fun ComposerHeader(
 private fun ComposerContent(
     content: PostComposerUiState.Content,
     onSelectDestination: (String) -> Unit,
-    onPickPhoto: () -> Unit,
+    onAddMedia: () -> Unit,
+    onRemoveMedia: (String) -> Unit,
     onCaptionChange: (String) -> Unit,
+    onSearchChange: (String) -> Unit,
+    onSelectTrack: (String) -> Unit,
     onPublish: () -> Unit,
 ) {
     LazyColumn(
@@ -242,26 +259,29 @@ private fun ComposerContent(
         }
 
         item(key = "destination") {
-            Column(verticalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
-                Text(
-                    text = stringResource(R.string.composer_destination_label),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                DestinationChips(
-                    destinations = content.destinations,
-                    selectedDestination = content.selectedDestination,
-                    onSelectDestination = onSelectDestination,
-                )
-            }
+            DestinationSection(
+                content = content,
+                onSelectDestination = onSelectDestination,
+                onSearchChange = onSearchChange,
+            )
         }
 
-        item(key = "photo") {
-            PhotoPickerCard(
-                photo = content.photo,
+        item(key = "media") {
+            MediaCarouselCard(
+                media = content.media,
                 enabled = !content.isBusy,
-                onPickPhoto = onPickPhoto,
+                onAddMedia = onAddMedia,
+                onRemoveMedia = onRemoveMedia,
             )
+        }
+
+        if (content.tracks.isNotEmpty()) {
+            item(key = "track") {
+                TrackSection(
+                    content = content,
+                    onSelectTrack = onSelectTrack,
+                )
+            }
         }
 
         item(key = "caption") {
@@ -302,30 +322,83 @@ private fun ComposerContent(
 }
 
 @Composable
-private fun DestinationChips(
-    destinations: List<Destination>,
-    selectedDestination: Destination?,
+private fun DestinationSection(
+    content: PostComposerUiState.Content,
     onSelectDestination: (String) -> Unit,
+    onSearchChange: (String) -> Unit,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        destinations.forEach { destination ->
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
+        Text(
+            text = stringResource(R.string.composer_destination_label),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        TextField(
+            value = content.searchQuery,
+            onValueChange = onSearchChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.composer_search_placeholder)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = PanamaIcons.Compass,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimens.iconSize),
+                )
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(Dimens.innerCorner),
+        )
+        // El chip cercano se destaca, pero nunca selecciona el destino solo.
+        content.nearby?.let { nearby ->
             FilterChip(
-                selected = destination.id == selectedDestination?.id,
-                onClick = { onSelectDestination(destination.id) },
-                label = { Text(destination.name) },
+                selected = content.selectedDestination?.id == nearby.destination.id,
+                onClick = { onSelectDestination(nearby.destination.id) },
+                label = {
+                    Text(
+                        text = stringResource(
+                            R.string.composer_nearby_chip,
+                            distanceLabel(nearby.distanceMeters),
+                        ),
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = PanamaIcons.Pin,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
             )
+        }
+        if (content.destinations.isEmpty()) {
+            Text(
+                text = stringResource(R.string.composer_search_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                content.destinations.forEach { destination ->
+                    FilterChip(
+                        selected = destination.id == content.selectedDestination?.id,
+                        onClick = { onSelectDestination(destination.id) },
+                        label = { Text(destination.name) },
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PhotoPickerCard(
-    photo: SelectedPhotoUi?,
+private fun MediaCarouselCard(
+    media: List<ComposerMediaUi>,
     enabled: Boolean,
-    onPickPhoto: () -> Unit,
+    onAddMedia: () -> Unit,
+    onRemoveMedia: (String) -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -333,75 +406,148 @@ private fun PhotoPickerCard(
         shape = RoundedCornerShape(Dimens.cardCorner),
         tonalElevation = Dimens.tonalElevation,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Dimens.itemGap)) {
-            if (photo != null) {
-                TonalImage(
-                    imageUrl = photo.fileUri,
-                    contentDescription = stringResource(R.string.composer_photo_selected),
-                    seed = photo.fileUri,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(PHOTO_HEIGHT),
-                )
-            }
-            Column(
-                modifier = Modifier.padding(
-                    start = Dimens.cardPadding,
-                    end = Dimens.cardPadding,
-                    bottom = Dimens.cardPadding,
-                ),
-                verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+        Column(
+            modifier = Modifier.padding(vertical = Dimens.itemGap),
+            verticalArrangement = Arrangement.spacedBy(Dimens.itemGap),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = Dimens.cardPadding),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Icon(
+                    imageVector = PanamaIcons.Camera,
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimens.iconSize),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(R.string.composer_media_label),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                if (media.isNotEmpty()) {
+                    TonalTag(
+                        text = stringResource(R.string.composer_media_count, media.size),
+                        tone = Tone.Neutral,
+                    )
+                }
+            }
+
+            if (media.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.composer_media_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Dimens.cardPadding),
+                )
+            } else {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = Dimens.cardPadding),
                     horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
                 ) {
-                    Icon(
-                        imageVector = PanamaIcons.Camera,
-                        contentDescription = null,
-                        modifier = Modifier.size(Dimens.iconSize),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(R.string.composer_photo_label),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    items(items = media, key = { it.id }) { item ->
+                        MediaThumbnail(
+                            item = item,
+                            enabled = enabled,
+                            onRemove = { onRemoveMedia(item.id) },
+                        )
+                    }
                 }
-                if (photo == null) {
-                    Text(
-                        text = stringResource(R.string.composer_photo_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    VerificationDetails(photo = photo)
-                }
-                SecondaryActionButton(
-                    text = stringResource(
-                        if (photo == null) {
-                            R.string.composer_photo_pick
-                        } else {
-                            R.string.composer_photo_change
-                        },
-                    ),
-                    onClick = onPickPhoto,
-                    enabled = enabled,
-                    icon = PanamaIcons.Camera,
-                )
+                VerificationSummary(media = media)
             }
+
+            SecondaryActionButton(
+                text = stringResource(
+                    if (media.isEmpty()) {
+                        R.string.composer_media_add
+                    } else {
+                        R.string.composer_media_add_more
+                    },
+                ),
+                onClick = onAddMedia,
+                enabled = enabled && media.size < MAX_MEDIA_ITEMS,
+                icon = PanamaIcons.Plus,
+                modifier = Modifier.padding(horizontal = Dimens.cardPadding),
+            )
         }
     }
 }
 
 @Composable
-private fun VerificationDetails(photo: SelectedPhotoUi) {
+private fun MediaThumbnail(
+    item: ComposerMediaUi,
+    enabled: Boolean,
+    onRemove: () -> Unit,
+) {
+    Box(modifier = Modifier.size(width = 132.dp, height = 176.dp)) {
+        if (item.type == PostMediaType.VIDEO) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = RoundedCornerShape(Dimens.innerCorner),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = PanamaIcons.Play,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            TonalImage(
+                imageUrl = item.fileUri,
+                contentDescription = stringResource(R.string.composer_media_selected),
+                seed = item.id,
+                corner = Dimens.innerCorner,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        IconButton(
+            onClick = onRemove,
+            enabled = enabled,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(32.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape),
+        ) {
+            Icon(
+                imageVector = PanamaIcons.Close,
+                contentDescription = stringResource(R.string.composer_media_remove),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        if (item.type == PostMediaType.VIDEO) {
+            TonalTag(
+                text = stringResource(R.string.composer_media_video_tag),
+                tone = Tone.Primary,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(6.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun VerificationSummary(media: List<ComposerMediaUi>) {
+    val photo = media.firstOrNull { it.type == PostMediaType.PHOTO && it.check != null }
+        ?: return
+    val check = photo.check ?: return
     Row(
+        modifier = Modifier.padding(horizontal = Dimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
     ) {
-        VerificationTag(check = photo.check)
-        photo.check.distanceMeters?.let { distance ->
+        VerificationTag(check = check)
+        check.distanceMeters?.let { distance ->
             TonalTag(
                 text = stringResource(
                     R.string.composer_distance_to_destination,
@@ -411,12 +557,51 @@ private fun VerificationDetails(photo: SelectedPhotoUi) {
             )
         }
     }
-    photo.metadata.capturedAtEpochMillis?.let { capturedAt ->
+}
+
+@Composable
+private fun TrackSection(
+    content: PostComposerUiState.Content,
+    onSelectTrack: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
         Text(
-            text = stringResource(R.string.composer_exif_date, dateLabel(capturedAt)),
-            style = MaterialTheme.typography.labelSmall,
+            text = stringResource(R.string.composer_track_label),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(R.string.composer_track_hint),
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            content.tracks.forEach { track ->
+                FilterChip(
+                    selected = content.linkedTrackId == track.id,
+                    onClick = { onSelectTrack(track.id) },
+                    label = {
+                        Text(
+                            text = stringResource(
+                                R.string.composer_track_option,
+                                track.name.ifBlank { stringResource(R.string.composer_track_unnamed) },
+                                distanceLabel(track.distanceMeters),
+                            ),
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = PanamaIcons.Route,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -435,4 +620,4 @@ private fun VerificationTag(check: ExifCheck) {
     TonalTag(text = stringResource(textRes), tone = tone)
 }
 
-private val PHOTO_HEIGHT = 220.dp
+private const val MAX_MEDIA_ITEMS = 10

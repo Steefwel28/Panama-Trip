@@ -4,6 +4,7 @@ import com.panamatrip.app.core.database.entity.CollectionEntity
 import com.panamatrip.app.core.database.entity.CommentEntity
 import com.panamatrip.app.core.database.entity.DestinationEntity
 import com.panamatrip.app.core.database.entity.PostEntity
+import com.panamatrip.app.core.database.entity.PostMediaEntity
 import com.panamatrip.app.core.database.entity.ReviewEntity
 import com.panamatrip.app.core.database.entity.RoutePlanEntity
 import com.panamatrip.app.core.database.entity.TrackEntity
@@ -13,6 +14,8 @@ import com.panamatrip.app.core.database.dao.GuideWithDestinationProjection
 import com.panamatrip.app.domain.logistics.FuelType
 import com.panamatrip.app.domain.logistics.SavedRoutePlan
 import com.panamatrip.app.domain.model.AccessStatus
+import com.panamatrip.app.domain.model.Carrier
+import com.panamatrip.app.domain.model.SignalLevel
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.Destination
 import com.panamatrip.app.domain.model.DestinationReview
@@ -21,6 +24,8 @@ import com.panamatrip.app.domain.model.GeoPoint
 import com.panamatrip.app.domain.model.GuideLanguage
 import com.panamatrip.app.domain.model.LocalGuide
 import com.panamatrip.app.domain.model.PostComment
+import com.panamatrip.app.domain.model.PostMediaItem
+import com.panamatrip.app.domain.model.PostMediaType
 import com.panamatrip.app.domain.model.RecordedTrack
 import com.panamatrip.app.domain.model.SavedCollection
 import com.panamatrip.app.domain.model.TerrainStatus
@@ -56,6 +61,10 @@ fun DestinationEntity.toDomain(
     elevationGainMeters = elevationGainMeters,
     recommendedVehicle = enumOrDefault(recommendedVehicle, VehicleType.SUV),
     vehicleAccess = completeAccessMap(access),
+    carrierSignal = mapOf(
+        Carrier.MOVIL to enumOrDefault(movilSignal, SignalLevel.MEDIUM),
+        Carrier.TIGO to enumOrDefault(tigoSignal, SignalLevel.MEDIUM),
+    ),
     averageRating = RatingCalculator.average(reviews),
     reviewCount = reviews.size,
     featuredOrder = featuredOrder,
@@ -84,6 +93,7 @@ fun PostEntity.toDomain(
     isLiked: Boolean,
     commentCount: Int,
     savedCollectionIds: Set<String>,
+    media: List<PostMediaEntity> = emptyList(),
 ): CommunityPost = CommunityPost(
     id = id,
     destination = destination,
@@ -105,6 +115,31 @@ fun PostEntity.toDomain(
     createdAt = createdAt,
     photoVerified = photoVerified,
     exifCapturedAtEpochMillis = exifCapturedAt,
+    media = media
+        .sortedBy { it.position }
+        .map { item -> item.toDomain() },
+    linkedTrackId = trackId,
+)
+
+fun PostMediaEntity.toDomain(): PostMediaItem = PostMediaItem(
+    id = id,
+    uri = uri,
+    mimeType = mimeType,
+    type = if (mimeType.startsWith("video/")) PostMediaType.VIDEO else PostMediaType.PHOTO,
+    width = width,
+    height = height,
+    durationMillis = durationMillis,
+)
+
+fun PostMediaItem.toEntity(postId: String, position: Int): PostMediaEntity = PostMediaEntity(
+    id = id,
+    postId = postId,
+    uri = uri,
+    mimeType = mimeType,
+    position = position,
+    width = width,
+    height = height,
+    durationMillis = durationMillis,
 )
 
 fun CollectionEntity.toDomain(postIds: List<String>, previewImageUrl: String?): SavedCollection =
@@ -186,6 +221,9 @@ fun TrackEntity.toDomain(): RecordedTrack = RecordedTrack(
     elevationGainMeters = elevationGainMeters,
     pointCount = pointCount,
     status = enumOrDefault(status, TrackStatus.COMPLETED),
+    validWalkingDistanceMeters = validWalkingDistanceMeters,
+    stepCount = stepCount,
+    evidenceAvailable = evidenceAvailable,
 )
 
 /** Arma el recorrido completo: cabecera de [TrackEntity] más sus puntos ordenados. */
@@ -204,6 +242,9 @@ fun RecordedTrack.toEntity(): TrackEntity = TrackEntity(
     elevationGainMeters = elevationGainMeters,
     pointCount = pointCount,
     status = status.name,
+    validWalkingDistanceMeters = validWalkingDistanceMeters,
+    stepCount = stepCount,
+    evidenceAvailable = evidenceAvailable,
 )
 
 fun TrackPoint.toEntity(trackId: String): TrackPointEntity = TrackPointEntity(

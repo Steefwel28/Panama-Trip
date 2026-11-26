@@ -11,6 +11,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
@@ -65,6 +69,11 @@ class LocationTrackingService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var trackRepository: TrackRepository
     private lateinit var notificationManager: NotificationManager
+    private lateinit var sensorManager: SensorManager
+
+    private var stepSensor: Sensor? = null
+    private var stepBaseline: Float? = null
+    private var stepCount = 0
 
     private var engine: TrackRecorderEngine? = null
     private var locationCallback: LocationCallback? = null
@@ -91,6 +100,8 @@ class LocationTrackingService : Service() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         trackRepository = (application as PanamaTripApplication).container.trackRepository
         notificationManager = getSystemService(NotificationManager::class.java)
+        sensorManager = getSystemService(SensorManager::class.java)
+        stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         createNotificationChannel()
         ensurePersistenceWriter(trackRepository)
     }
@@ -114,6 +125,7 @@ class LocationTrackingService : Service() {
         flushPendingPoints(force = true)
         stopTicker()
         stopLocationUpdates()
+        stopStepCounter()
         serviceScope.cancel()
         // Un finish/discard ya encolado deja `engine == null`: el escritor es
         // quien publica Idle al terminar la escritura, no este callback.
@@ -135,7 +147,7 @@ class LocationTrackingService : Service() {
             // startForeground con tipo location lanza SecurityException sin el
             // permiso runtime; el servicio debe cerrarse sin tumbar el proceso.
             runCatching { startForegroundCompat(EMPTY_SNAPSHOT) }
-            _events.tryEmit(RecorderEvent.PERMISSION_DENIED)
+            _events.tryEmit(RecorderEvent.PermissionDenied)
             stopForegroundCompat()
             stopSelf(lastStartId)
             return
@@ -148,6 +160,7 @@ class LocationTrackingService : Service() {
         trackId = newTrackId
         pendingPoints.clear()
         lastFlushElapsedMillis = SystemClock.elapsedRealtime()
+        _path.value = emptyList()
         engine = TrackRecorderEngine(
             trackId = newTrackId,
             startedAtEpochMillis = startedAtEpochMillis,
@@ -162,7 +175,7 @@ class LocationTrackingService : Service() {
         if (runCatching { startForegroundCompat(snapshot) }.isFailure) {
             engine = null
             trackId = null
-            _events.tryEmit(RecorderEvent.FAILED)
+            _events.tryEmit(RecorderEvent.Failed)
             stopSelf(lastStartId)
             return
         }
@@ -196,6 +209,7 @@ class LocationTrackingService : Service() {
             destinationName = destinationName,
         )
         requestLocationUpdates()
+        startStepCounter()
         startTicker()
     }
 
@@ -222,6 +236,7 @@ class LocationTrackingService : Service() {
         engine = null
         stopTicker()
         stopLocationUpdates()
+        stopStepCounter()
         val now = SystemClock.elapsedRealtime()
         val track = activeEngine.finish(
             nowElapsedMillis = now,
@@ -229,6 +244,7 @@ class LocationTrackingService : Service() {
         )
         val finishedId = trackId
         pendingPoints.clear()
+        _path.value = emptyList()
         if (finishedId != null) {
             // El guardado y el Idle los completa el escritor serializado.
             enqueue(PersistenceCommand.FinishTrack(track))
@@ -245,14 +261,16 @@ class LocationTrackingService : Service() {
         val discardedId = trackId
         engine = null
         pendingPoints.clear()
+        _path.value = emptyList()
         stopTicker()
         stopLocationUpdates()
+        stopStepCounter()
         if (discardedId != null) {
             enqueue(PersistenceCommand.DiscardTrack(discardedId))
             if (trackId == discardedId) trackId = null
         } else {
             _session.value = RecorderSession.Idle
-            _events.tryEmit(RecorderEvent.DISCARDED)
+            _events.tryEmit(RecorderEvent.Discarded)
         }
         stopIfIdle()
     }
@@ -328,8 +346,54 @@ class LocationTrackingService : Service() {
         fusedLocationClient.requestLocationUpdates(request, callback, Looper.getMainLooper())
     }
 
-    private fun addLocation(location: android.location.Location) {
-        val activeEngine = engine ?: return
+    /**
+     * Podómetro: TYPE_STEP_COUNTER entrega pasos acumulados desde el arranque
+     * del dispositivo, así que se descuenta la primera lectura. Requiere
+     * ACTIVITY_RECOGNITION (API 29+); si falta el permiso o el sensor, el
+     * contador queda en 0 y la UI muestra «No disponible».
+     */
+    private fun startStepCounter() {
+        stepBaseline = null
+        stepCount = 0
+        val sensor = stepSensor ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        sensorManager.registerListener(
+            stepListener,
+            sensor,
+            SensorManager.SENSOR_DELAY_NORMAL,
+        )
+    }
+
+    private fun stopStepCounter() {
+        sensorManager.unregisterListener(stepListener)
+        stepBaseline = null
+    }
+
+    private val stepListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            if (event.sensor.type != Sensor.TYPE_STEP_COUNTER) return
+            val total = event.values.firstOrNull() ?: return
+            val baseline = stepBaseline
+            if (baseline == null) {
+                stepBaseline = total
+                return
+            }
+            val steps = (total - baseline).toInt().coerceAtLeast(0)
+            if (steps == stepCount) return
+            stepCount = steps
+            engine?.updateStepCount(steps)
+            publishSnapshot()
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+    }
+
+    private fun addLocation(location: android.location.Location) {        val activeEngine = engine ?: return
         val sample = TrackSample(
             point = GeoPoint(location.latitude, location.longitude),
             elevationMeters = elevationMetersOf(location),
@@ -339,6 +403,7 @@ class LocationTrackingService : Service() {
         if (activeEngine.addSample(sample, SystemClock.elapsedRealtime())) {
             activeEngine.lastRecordedPoint()?.let { point ->
                 pendingPoints += point
+                _path.value = _path.value + point.point
             }
             publishSnapshot()
             flushPendingPoints(force = false)
@@ -591,7 +656,11 @@ class LocationTrackingService : Service() {
                             }
                             completeSession(command.track.id)
                             _events.tryEmit(
-                                if (result.isSuccess) RecorderEvent.SAVED else RecorderEvent.FAILED,
+                                if (result.isSuccess) {
+                                    RecorderEvent.Saved(command.track.id)
+                                } else {
+                                    RecorderEvent.Failed
+                                },
                             )
                             emptyList()
                         }
@@ -599,7 +668,7 @@ class LocationTrackingService : Service() {
                         is PersistenceCommand.DiscardTrack -> {
                             retryIo { repository.discard(command.trackId) }
                             completeSession(command.trackId)
-                            _events.tryEmit(RecorderEvent.DISCARDED)
+                            _events.tryEmit(RecorderEvent.Discarded)
                             emptyList()
                         }
                     }
@@ -641,6 +710,13 @@ class LocationTrackingService : Service() {
 
         private val _session = MutableStateFlow<RecorderSession>(RecorderSession.Idle)
         val session: StateFlow<RecorderSession> = _session.asStateFlow()
+
+        /**
+         * Ruta viva para el mapa. Se copia solo al aceptar un punto nuevo
+         * (cada ≥5 m), no en cada tick del cronómetro.
+         */
+        private val _path = MutableStateFlow<List<GeoPoint>>(emptyList())
+        val path: StateFlow<List<GeoPoint>> = _path.asStateFlow()
 
         private val _events = MutableSharedFlow<RecorderEvent>(
             extraBufferCapacity = 4,

@@ -25,6 +25,20 @@ class PreferencesRepositoryImpl(
 
     override suspend fun setCashAlertsEnabled(enabled: Boolean) = store.setCashAlertsEnabled(enabled)
 
+    override suspend fun completeOnboarding(name: String, handle: String, bio: String, guest: Boolean) =
+        store.completeOnboarding(name, handle, bio, guest)
+
+    override suspend fun signInLocal(): Boolean = store.signInLocal()
+
+    override suspend fun enterAsGuest() = store.enterAsGuest()
+
+    override suspend fun updateProfile(name: String, handle: String, bio: String) =
+        store.updateProfile(name, handle, bio)
+
+    override suspend fun setAvatarPath(path: String?) = store.setAvatarPath(path)
+
+    override suspend fun setBannerPath(path: String?) = store.setBannerPath(path)
+
     override suspend fun recordLike(destination: Destination) =
         store.recordLike(destination.id, destination.ecosystem)
 

@@ -34,6 +34,7 @@ fun accessStatusColor(status: AccessStatus): Color = when (status) {
     AccessStatus.CLEAR -> MaterialTheme.colorScheme.primary
     AccessStatus.CAUTION -> MaterialTheme.colorScheme.tertiary
     AccessStatus.BLOCKED -> MaterialTheme.colorScheme.error
+    AccessStatus.CLOSED -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 /** Semáforo vehicular comunitario: un renglón por tipo de vehículo. */

@@ -19,9 +19,14 @@ sealed interface RecorderSession {
 }
 
 /** Eventos efímeros del servicio hacia la UI. */
-enum class RecorderEvent {
-    SAVED,
-    DISCARDED,
-    FAILED,
-    PERMISSION_DENIED,
+sealed interface RecorderEvent {
+
+    /** El track quedó persistido; el id permite enlazarlo en el compositor. */
+    data class Saved(val trackId: String) : RecorderEvent
+
+    data object Discarded : RecorderEvent
+
+    data object Failed : RecorderEvent
+
+    data object PermissionDenied : RecorderEvent
 }

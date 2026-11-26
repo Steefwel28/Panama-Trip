@@ -61,6 +61,16 @@ object Routes {
     const val TRACK_RECORDER = "recorder?destinationId={destinationId}"
     const val TRACK_RECORDER_BASE = "recorder"
     const val POST_COMPOSER = "composer"
+    const val ARG_TRACK_ID = "trackId"
+    const val POST_COMPOSER_PATTERN = "composer?trackId={trackId}"
+
+    /** Solo IDs viajan en la navegación; el material se resuelve en el VM. */
+    fun postComposer(trackId: String? = null): String =
+        if (trackId.isNullOrBlank()) {
+            POST_COMPOSER
+        } else {
+            "$POST_COMPOSER?$ARG_TRACK_ID=${android.net.Uri.encode(trackId)}"
+        }
 
     const val ARG_DESTINATION_ID = "destinationId"
 
@@ -142,7 +152,7 @@ fun PanamaTripApp(container: AppContainer) {
                 ExploreRoute(
                     container = container,
                     onOpenDestination = { id -> navController.navigate(Routes.destination(id)) },
-                    onPlanRoute = { id -> navController.navigate(Routes.route(id)) },
+                    onPlanRoute = { id -> navController.navigateToRoute(id) },
                     onOpenRecorder = { navController.navigate(Routes.trackRecorder()) },
                     onNewPost = { navController.navigate(Routes.POST_COMPOSER) },
                 )
@@ -156,7 +166,7 @@ fun PanamaTripApp(container: AppContainer) {
                 DestinationDetailRoute(
                     container = container,
                     onBack = { navController.popBackStack() },
-                    onPlanRoute = { id -> navController.navigate(Routes.route(id)) },
+                    onPlanRoute = { id -> navController.navigateToRoute(id) },
                 )
             }
             composable(
@@ -207,11 +217,24 @@ fun PanamaTripApp(container: AppContainer) {
                 TrackRecorderRoute(
                     container = container,
                     onBack = { navController.popBackStack() },
+                    onTrackSaved = { trackId ->
+                        navController.navigate(Routes.postComposer(trackId))
+                    },
                 )
             }
-            composable(Routes.POST_COMPOSER) {
+            composable(
+                route = Routes.POST_COMPOSER_PATTERN,
+                arguments = listOf(
+                    navArgument(Routes.ARG_TRACK_ID) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) { entry ->
                 PostComposerRoute(
                     container = container,
+                    initialTrackId = entry.arguments?.getString(Routes.ARG_TRACK_ID),
                     onBack = { navController.popBackStack() },
                     onPublished = { navController.popBackStack() },
                 )
@@ -257,9 +280,23 @@ private fun NavHostController.navigateToTab(route: String) {
         navOptions = navOptions {
             popUpTo(graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
-            restoreState = true
+            // La pestaña Mi Ruta nunca restaura argumentos de una visita vieja:
+            // al entrar desde la barra se muestra la ruta activa, no un detalle.
+            restoreState = route != Routes.ROUTE_BASE
         },
     )
+}
+
+/**
+ * «Planificar ruta» entra a Mi Ruta como raíz de pestaña: limpia detalles
+ * descartados hasta el inicio del grafo y no arrastra argumentos previos.
+ */
+private fun NavHostController.navigateToRoute(destinationId: String) {
+    navigate(Routes.route(destinationId)) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = false
+    }
 }
 
 private fun isTopLevelRoute(route: String): Boolean =

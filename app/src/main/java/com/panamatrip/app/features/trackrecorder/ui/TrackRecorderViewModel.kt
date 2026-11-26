@@ -11,6 +11,7 @@ import com.panamatrip.app.core.ui.UiError
 import com.panamatrip.app.core.ui.UiNotice
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.RecordedTrack
+import com.panamatrip.app.domain.model.GeoPoint
 import com.panamatrip.app.domain.model.TrackProgress
 import com.panamatrip.app.domain.model.TrackStatus
 import com.panamatrip.app.domain.repository.DestinationRepository
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -48,6 +50,10 @@ class TrackRecorderViewModel(
         savedStateHandle.get<String>(ARG_DESTINATION_ID)?.takeIf { it.isNotBlank() }
     private val retryTrigger = MutableStateFlow(0)
     private val resumableTrack = MutableStateFlow<RecordedTrack?>(null)
+    private val _savedTrackId = MutableStateFlow<String?>(null)
+
+    /** Track recién cerrado, para abrir el compositor con la ruta enlazada. */
+    val savedTrackId: StateFlow<String?> = _savedTrackId.asStateFlow()
 
     private val noticeChannel = MutableSharedFlow<UiNotice>(
         extraBufferCapacity = NOTICE_BUFFER,
@@ -56,13 +62,14 @@ class TrackRecorderViewModel(
     val notices: SharedFlow<UiNotice> = noticeChannel.asSharedFlow()
 
     val state: StateFlow<TrackRecorderUiState> = retryTrigger.flatMapLatest {
-        combine<List<RecordedTrack>, RecorderSession, RecordedTrack?, TrackRecorderUiState>(
+        combine<List<RecordedTrack>, RecorderSession, RecordedTrack?, List<GeoPoint>, TrackRecorderUiState>(
             trackRepository.observeTracks(),
             controller.session,
             resumableTrack,
-        ) { tracks, session, resumable ->
+            controller.path,
+        ) { tracks, session, resumable, path ->
             TrackRecorderUiState.Content(
-                active = session.toActiveUi(),
+                active = session.toActiveUi(path),
                 history = tracks
                     .filter { track -> track.status == TrackStatus.COMPLETED }
                     .map { track -> track.toUi() },
@@ -89,10 +96,13 @@ class TrackRecorderViewModel(
         viewModelScope.launch {
             controller.events.collect { event ->
                 when (event) {
-                    RecorderEvent.SAVED -> noticeChannel.tryEmit(UiNotice.TRACK_SAVED)
-                    RecorderEvent.DISCARDED -> noticeChannel.tryEmit(UiNotice.TRACK_DISCARDED)
-                    RecorderEvent.FAILED -> noticeChannel.tryEmit(UiNotice.ACTION_FAILED)
-                    RecorderEvent.PERMISSION_DENIED -> {
+                    is RecorderEvent.Saved -> {
+                        noticeChannel.tryEmit(UiNotice.TRACK_SAVED)
+                        _savedTrackId.value = event.trackId
+                    }
+                    RecorderEvent.Discarded -> noticeChannel.tryEmit(UiNotice.TRACK_DISCARDED)
+                    RecorderEvent.Failed -> noticeChannel.tryEmit(UiNotice.ACTION_FAILED)
+                    RecorderEvent.PermissionDenied -> {
                         noticeChannel.tryEmit(UiNotice.LOCATION_DENIED)
                     }
                 }
@@ -169,7 +179,12 @@ class TrackRecorderViewModel(
         retryTrigger.update { it + 1 }
     }
 
-    private fun RecorderSession.toActiveUi(): ActiveTrackUi? = when (this) {
+    /** Marca el track ya enlazado para no reabrir el compositor en bucle. */
+    fun consumeSavedTrack() {
+        _savedTrackId.value = null
+    }
+
+    private fun RecorderSession.toActiveUi(path: List<GeoPoint>): ActiveTrackUi? = when (this) {
         RecorderSession.Idle -> null
         is RecorderSession.Active -> ActiveTrackUi(
             status = status,
@@ -180,6 +195,9 @@ class TrackRecorderViewModel(
             averageSpeedKmh = snapshot.averageSpeedKmh,
             elevationGainMeters = snapshot.elevationGainMeters,
             pointCount = snapshot.pointCount,
+            validWalkingDistanceMeters = snapshot.validWalkingDistanceMeters,
+            stepCount = snapshot.stepCount,
+            path = path,
         )
     }
 
@@ -191,6 +209,8 @@ class TrackRecorderViewModel(
         activeDurationMillis = activeDurationMillis,
         averageSpeedKmh = averageSpeedKmh,
         elevationGainMeters = elevationGainMeters,
+        validWalkingDistanceMeters = validWalkingDistanceMeters,
+        stepCount = stepCount,
     )
 
     companion object {

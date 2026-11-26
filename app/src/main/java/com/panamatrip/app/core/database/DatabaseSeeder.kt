@@ -52,6 +52,8 @@ class DatabaseSeeder(private val database: PanamaTripDatabase) {
                     elevationGainMeters = seed.elevationGainMeters,
                     recommendedVehicle = seed.recommendedVehicle.name,
                     featuredOrder = seed.featuredOrder,
+                    movilSignal = seed.movilSignal.name,
+                    tigoSignal = seed.tigoSignal.name,
                 )
             },
         )

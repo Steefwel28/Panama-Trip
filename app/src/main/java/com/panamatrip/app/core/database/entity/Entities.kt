@@ -24,6 +24,8 @@ data class DestinationEntity(
     val elevationGainMeters: Int,
     val recommendedVehicle: String,
     val featuredOrder: Int,
+    val movilSignal: String = "MEDIUM",
+    val tigoSignal: String = "MEDIUM",
 )
 
 @Entity(
@@ -61,6 +63,27 @@ data class PostEntity(
     val createdAt: Long,
     val photoVerified: Boolean = false,
     val exifCapturedAt: Long? = null,
+    /** Ruta grabada vinculada (máximo una por publicación). */
+    val trackId: String? = null,
+)
+
+/**
+ * Medio adjunto a una publicación (foto o video). Se guarda como tabla aparte
+ * para que un post pueda llevar carrusel sin duplicar la cabecera.
+ */
+@Entity(
+    tableName = "post_media",
+    indices = [Index("postId")],
+)
+data class PostMediaEntity(
+    @PrimaryKey val id: String,
+    val postId: String,
+    val uri: String,
+    val mimeType: String,
+    val position: Int,
+    val width: Int,
+    val height: Int,
+    val durationMillis: Long?,
 )
 
 @Entity(tableName = "post_likes")
@@ -172,6 +195,18 @@ data class TrackEntity(
     val pointCount: Int,
     @ColumnInfo(defaultValue = "'COMPLETED'")
     val status: String = "COMPLETED",
+    /** Metros a pie dentro del límite humano; nunca suma tramos > 15 km/h. */
+    @ColumnInfo(defaultValue = "0")
+    val validWalkingDistanceMeters: Int = 0,
+    /** Pasos detectados por el podómetro durante la sesión. */
+    @ColumnInfo(defaultValue = "0")
+    val stepCount: Int = 0,
+    /**
+     * `false` en tracks históricos anteriores al límite de 15 km/h: el odómetro
+     * usa su distancia completa en vez de inventar una evidencia que no existe.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val evidenceAvailable: Boolean = false,
 )
 
 @Entity(

@@ -19,11 +19,26 @@ enum class Ecosystem {
     PINE_FOREST,
 }
 
+/** Operadoras con cobertura registrada en el destino. */
+enum class Carrier {
+    MOVIL,
+    TIGO,
+}
+
+/** Nivel de señal móvil reportado, de sin señal a cobertura plena. */
+enum class SignalLevel {
+    NONE,
+    LOW,
+    MEDIUM,
+    HIGH,
+}
+
 /** Veredicto comunitario de acceso vehicular. */
 enum class AccessStatus {
     CLEAR,
     CAUTION,
     BLOCKED,
+    CLOSED,
 }
 
 /** Mensaje rápido de estado de vía disponible al comentar una publicación. */

@@ -36,4 +36,29 @@ object TrackMetricsCalculator {
         val hours = activeDurationMillis / MILLIS_PER_HOUR
         return kilometers / hours
     }
+
+    /**
+     * Distancia válida para caminata: descarta los tramos cuya velocidad
+     * supera [MAX_WALKING_SPEED_KMH] (15 km/h). El tramo se sigue dibujando en
+     * el mapa, pero no suma al odómetro ni al pasaporte.
+     */
+    fun validWalkingDistanceMeters(
+        points: List<TrackPoint>,
+        maxWalkingSpeedKmh: Double = MAX_WALKING_SPEED_KMH,
+    ): Int {
+        val maxMetersPerSecond = maxWalkingSpeedKmh / SECONDS_PER_HOUR * METERS_PER_KILOMETER
+        return points.zipWithNext().sumOf { (from, to) ->
+            if (from.segmentIndex != to.segmentIndex) {
+                0
+            } else {
+                val meters = GeoCalculator.distanceMeters(from.point, to.point)
+                val elapsedMillis = to.activeElapsedMillis - from.activeElapsedMillis
+                val speed = if (elapsedMillis <= 0L) 0.0 else meters / (elapsedMillis / 1000.0)
+                if (speed <= maxMetersPerSecond) meters else 0
+            }
+        }
+    }
+
+    const val MAX_WALKING_SPEED_KMH = 15.0
+    private const val SECONDS_PER_HOUR = 3_600.0
 }

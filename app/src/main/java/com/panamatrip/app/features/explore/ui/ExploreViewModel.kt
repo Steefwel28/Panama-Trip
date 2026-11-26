@@ -27,6 +27,7 @@ import com.panamatrip.app.domain.repository.CommunityRepository
 import com.panamatrip.app.domain.repository.DestinationRepository
 import com.panamatrip.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +62,12 @@ class ExploreViewModel(
 
     /** Última ubicación conocida del teléfono; null cae a Ciudad de Panamá. */
     private val userLocation = MutableStateFlow<GeoPoint?>(null)
+
+    /**
+     * Una sola consulta de ubicación a la vez: `init` y `ON_RESUME` pueden
+     * coincidir en el arranque y no deben duplicar la llamada al GPS.
+     */
+    private var locationJob: Job? = null
 
     /**
      * Orden congelado del feed mientras el usuario interactúa: dar o quitar
@@ -115,7 +122,16 @@ class ExploreViewModel(
     )
 
     init {
-        viewModelScope.launch {
+        refreshUserLocation()
+    }
+
+    /**
+     * Refresca la ubicación sin caché bloqueante. Cancela la consulta previa:
+     * una respuesta tardía de un permiso o GPS viejo nunca debe pisar la nueva.
+     */
+    fun refreshUserLocation() {
+        if (locationJob?.isActive == true) return
+        locationJob = viewModelScope.launch {
             userLocation.value = runCatching { locationSource() }.getOrNull()
         }
     }
@@ -151,6 +167,7 @@ class ExploreViewModel(
 
     fun retry() {
         releaseFrozenOrder()
+        refreshUserLocation()
         retryTrigger.update { it + 1 }
     }
 

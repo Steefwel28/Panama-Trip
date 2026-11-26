@@ -333,6 +333,67 @@
     <string name="composer_exif_date">Capturada el %1$s</string>
     <string name="composer_empty_title">Sin destinos para publicar</string>
     <string name="composer_empty_body">La base editorial todavía no tiene destinos disponibles. Vuelve a Explorar en unos segundos.</string>
+    <string name="composer_search_placeholder">Buscar destino o provincia</string>
+    <string name="composer_search_empty">Ningún destino coincide con la búsqueda.</string>
+    <string name="composer_nearby_chip">Cerca de ti · %1$s</string>
+    <string name="composer_media_label">Fotos y videos</string>
+    <string name="composer_media_count">%1$d en el carrusel</string>
+    <string name="composer_media_hint">Adjunta hasta 10 fotos o videos. Copiamos cada archivo al almacenamiento interno para que el borrador no dependa del permiso temporal de la galería.</string>
+    <string name="composer_media_add">Añadir fotos o videos</string>
+    <string name="composer_media_add_more">Añadir más</string>
+    <string name="composer_media_selected">Medio seleccionado para la publicación</string>
+    <string name="composer_media_remove">Quitar del carrusel</string>
+    <string name="composer_media_video_tag">VIDEO</string>
+    <string name="composer_track_label">Ruta grabada</string>
+    <string name="composer_track_hint">Puedes vincular una sola ruta por publicación. Tocar otra la reemplaza; tocar la misma la quita.</string>
+    <string name="composer_track_option">%1$s · %2$s</string>
+    <string name="composer_track_unnamed">Ruta sin nombre</string>
+
+    <!-- Grabador: mapa vivo y podómetro -->
+    <string name="recorder_map_title">Ruta en vivo</string>
+    <string name="recorder_map_offline">Mapa base sin conexión</string>
+    <string name="recorder_map_recenter">Recentrar mapa</string>
+    <string name="recorder_stat_valid_distance">Distancia a pie</string>
+    <string name="recorder_stat_steps">Pasos</string>
+    <string name="recorder_steps_unavailable">No disponible</string>
+
+    <!-- Perfil: portada, odómetro y pasaporte -->
+    <string name="profile_banner_description">Portada del perfil</string>
+    <string name="profile_avatar_description">Foto de perfil</string>
+    <string name="profile_avatar_change">Cambiar foto de perfil</string>
+    <string name="profile_odometer_eyebrow">ODÓMETRO A PIE</string>
+    <string name="profile_odometer_next_tier">Faltan %1$s para la siguiente banda</string>
+    <string name="profile_odometer_top_tier">Llegaste a la cima del comparador panameño.</string>
+    <string name="profile_tier_first_step">Primer paso</string>
+    <string name="profile_tier_neighborhood">Trocha de barrio</string>
+    <string name="profile_tier_weekend">Sendero de fin de semana</string>
+    <string name="profile_tier_guide">Guía de trocha</string>
+    <string name="profile_tier_veteran">Veterano del Istmo</string>
+    <string name="profile_tier_gold">A Puro Pulmón</string>
+    <string name="profile_passport_eyebrow">PASAPORTE</string>
+    <string name="profile_passport_title">Provincias y comarcas</string>
+    <string name="profile_passport_progress">%1$d de %2$d</string>
+    <string name="profile_passport_provinces">10 provincias</string>
+    <string name="profile_passport_comarcas">6 comarcas</string>
+    <string name="profile_passport_badges">Insignias</string>
+    <string name="profile_badge_first_step">Primer paso</string>
+    <string name="profile_badge_gold">A Puro Pulmón · oro</string>
+    <string name="profile_badge_dawn">Cazador de Amaneceres</string>
+    <string name="profile_badge_oceans">Dos Océanos</string>
+    <string name="profile_badge_rain">A Prueba de Bajareque</string>
+    <string name="profile_ecosystem_eyebrow">TU AFINIDAD</string>
+    <string name="profile_ecosystem_share">%1$s · %2$d%%</string>
+
+    <!-- Acceso y cobertura -->
+    <string name="access_closed">Cerrado</string>
+    <string name="carrier_signal_title">Cobertura móvil</string>
+    <string name="carrier_movil">+Móvil</string>
+    <string name="carrier_tigo">Tigo</string>
+    <string name="carrier_signal_note">Reportes comunitarios de las últimas 48 horas. Sin dato no se inventa cobertura.</string>
+    <string name="signal_none">Sin señal</string>
+    <string name="signal_low">Baja</string>
+    <string name="signal_medium">Media</string>
+    <string name="signal_high">Alta</string>
     <string name="action_new_post">Nueva publicación</string>
     <string name="post_author_role">Expedición comunitaria</string>
     <string name="guest_author_initials">IN</string>
@@ -389,5 +450,35 @@
     <string name="route_origin_gps_unavailable">No pudimos leer el GPS; usamos tu punto guardado.</string>
     <string name="route_origin_current_value">GPS · %1$s</string>
     <string name="route_origin_custom_value">Guardado · %1$s</string>
+    <string name="route_origin_locating">Buscando ubicación…</string>
     <string name="route_food_km">Km %1$d</string>
+
+    <!-- Medios del feed -->
+    <string name="video_play">Reproducir video</string>
+    <string name="video_pause">Pausar video</string>
+    <string name="video_close">Cerrar video</string>
+
+    <!-- Splash -->
+    <string name="splash_tagline">Panamá a puro pulmón</string>
+
+    <!-- Onboarding / cuenta local -->
+    <string name="onboarding_eyebrow">BIENVENIDO A CASA</string>
+    <string name="onboarding_title">Tu bitácora de senderos empieza aquí</string>
+    <string name="onboarding_body">Guarda rutas, kilómetros y fotos aunque no haya señal. Todo vive en tu teléfono.</string>
+    <string name="onboarding_register">Crear cuenta local</string>
+    <string name="onboarding_sign_in">Iniciar sesión</string>
+    <string name="onboarding_guest">Entrar como invitado</string>
+    <string name="onboarding_offline_note">Sin servidores ni cuentas externas: tu perfil se guarda en este dispositivo.</string>
+    <string name="onboarding_name_label">Nombre</string>
+    <string name="onboarding_handle_label">Usuario</string>
+    <string name="onboarding_bio_label">Bio (opcional)</string>
+    <string name="onboarding_create_account">Crear mi cuenta</string>
+    <string name="onboarding_recover_profile">Recuperar mi perfil</string>
+    <string name="onboarding_login_body">Si ya registraste tu perfil en este teléfono, lo recuperamos tal como lo dejaste.</string>
+    <string name="onboarding_saving">Guardando…</string>
+    <string name="onboarding_back">Volver</string>
+    <string name="onboarding_error_name">Escribe un nombre de al menos 2 letras.</string>
+    <string name="onboarding_error_handle">El usuario debe tener 3–20 letras, números, punto o guion bajo.</string>
+    <string name="onboarding_error_no_account">No encontramos un perfil local. Crea una cuenta primero.</string>
+    <string name="onboarding_error_save">No pudimos guardar tu perfil. Intenta otra vez.</string>
 </resources>

@@ -9,10 +9,13 @@ import com.panamatrip.app.domain.model.Destination
 import com.panamatrip.app.domain.model.DestinationReview
 import com.panamatrip.app.domain.model.VehicleAccessSummary
 import com.panamatrip.app.domain.model.VehicleType
+import com.panamatrip.app.domain.ranking.VehicleReportFreshness
 import com.panamatrip.app.domain.ranking.VehicleTrafficLight
 import com.panamatrip.app.domain.repository.DestinationRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 class DestinationRepositoryImpl(
@@ -25,9 +28,13 @@ class DestinationRepositoryImpl(
         destinationDao.observeAll(),
         vehicleReportDao.observeAll(),
         reviewDao.observeAll(),
-    ) { destinations, reports, reviews ->
+        clockTicker,
+    ) { destinations, reports, reviews, now ->
+        val freshReports = reports.filter { report ->
+            VehicleReportFreshness.isFresh(report.createdAt, now)
+        }
         val accessByDestination: Map<String, Map<VehicleType, VehicleAccessSummary>> =
-            reports.groupBy { it.destinationId }
+            freshReports.groupBy { it.destinationId }
                 .mapValues { (_, destinationReports) ->
                     VehicleTrafficLight.aggregate(destinationReports.map { it.toTrafficLightReport() })
                 }
@@ -48,4 +55,19 @@ class DestinationRepositoryImpl(
 
     override fun observeReviews(destinationId: String): Flow<List<DestinationReview>> =
         reviewDao.observeForDestination(destinationId).map { reviews -> reviews.map { it.toDomain() } }
+
+    /**
+     * Emite cada minuto para que la caducidad de 48 h sea en vivo: un reporte
+     * deja de pesar en el semáforo sin reiniciar la app.
+     */
+    private val clockTicker: Flow<Long> = flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(EXPIRY_TICK_MILLIS)
+        }
+    }
+
+    private companion object {
+        const val EXPIRY_TICK_MILLIS = 60_000L
+    }
 }

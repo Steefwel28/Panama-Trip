@@ -23,6 +23,7 @@ import com.panamatrip.app.domain.repository.RoutePlanRepository
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -59,6 +60,9 @@ class RoutePlanViewModel(
     private val departureWindow = MutableStateFlow(DepartureWindow.DAWN)
     private val originMode = MutableStateFlow(OriginMode.CUSTOM)
     private val gpsLocation = MutableStateFlow<GeoPoint?>(null)
+    private val locatingOrigin = MutableStateFlow(false)
+    private var locationJob: Job? = null
+    private var locationRequest = 0
     private var lastDestinationId: String? = null
 
     private val noticeChannel = MutableSharedFlow<UiNotice>(
@@ -106,25 +110,61 @@ class RoutePlanViewModel(
         }
     }
 
+    /**
+     * «Mi ubicación» siempre consulta coordenadas frescas: no reutiliza la
+     * caché de una selección anterior. Al volver a origen personalizado se
+     * cancela la consulta pendiente y se descarta cualquier respuesta tardía.
+     */
     fun selectOrigin(mode: OriginMode) {
-        originMode.value = mode
-        if (mode == OriginMode.CURRENT_LOCATION && gpsLocation.value == null) {
-            viewModelScope.launch {
-                val point = runCatching { locationSource() }.getOrNull()
-                if (point == null) {
-                    originMode.value = OriginMode.CUSTOM
-                    noticeChannel.tryEmit(UiNotice.LOCATION_DENIED)
-                } else {
-                    gpsLocation.value = point
-                }
+        if (mode == OriginMode.CUSTOM) {
+            cancelLocationRequest()
+            originMode.value = OriginMode.CUSTOM
+            return
+        }
+        originMode.value = OriginMode.CURRENT_LOCATION
+        refreshLocation()
+    }
+
+    fun refreshLocation() {
+        val request = ++locationRequest
+        locationJob?.cancel()
+        locatingOrigin.value = true
+        locationJob = viewModelScope.launch {
+            val point = runCatching { locationSource() }.getOrNull()
+            // Respuesta tardía: cambió el destino, el usuario volvió a origen
+            // personalizado o ya hay una consulta más nueva en curso.
+            if (request != locationRequest || originMode.value != OriginMode.CURRENT_LOCATION) {
+                return@launch
+            }
+            if (point == null) {
+                originMode.value = OriginMode.CUSTOM
+                locatingOrigin.value = false
+                noticeChannel.tryEmit(UiNotice.LOCATION_DENIED)
+            } else {
+                gpsLocation.value = point
+                locatingOrigin.value = false
             }
         }
+    }
+
+    fun onLocationDenied() {
+        cancelLocationRequest()
+        originMode.value = OriginMode.CUSTOM
+        noticeChannel.tryEmit(UiNotice.LOCATION_DENIED)
+    }
+
+    private fun cancelLocationRequest() {
+        locationRequest++
+        locationJob?.cancel()
+        locationJob = null
+        locatingOrigin.value = false
     }
 
     private fun resetTransientSelection() {
         fuelOverride.value = null
         surchargeOverride.value = null
         departureWindow.value = DepartureWindow.DAWN
+        cancelLocationRequest()
         originMode.value = OriginMode.CUSTOM
         gpsLocation.value = null
     }
@@ -174,18 +214,20 @@ class RoutePlanViewModel(
         val vehicle = preferences.preferredVehicle ?: destination.recommendedVehicle
         val suggestedSurcharge = LogisticsEngine.suggestsMountainSurcharge(destination)
         val selection = combine(
-            fuelOverride,
-            surchargeOverride,
-            departureWindow,
-            originMode,
-            gpsLocation,
-        ) { fuel, surcharge, window, mode, gps ->
+            combine(fuelOverride, surchargeOverride, departureWindow) { fuel, surcharge, window ->
+                Triple(fuel, surcharge, window)
+            },
+            combine(originMode, gpsLocation, locatingOrigin) { mode, gps, locating ->
+                Triple(mode, gps, locating)
+            },
+        ) { (fuel, surcharge, window), (mode, gps, locating) ->
             PlanSelection(
                 fuel = fuel,
                 surcharge = surcharge,
                 window = window,
                 originMode = mode,
                 gps = gps,
+                locating = locating,
             )
         }
 
@@ -215,6 +257,7 @@ class RoutePlanViewModel(
                 destination = destination,
                 origin = origin,
                 originMode = current.originMode,
+                isLocatingOrigin = current.locating,
                 vehicle = vehicle,
                 fuelType = fuel,
                 surchargeEnabled = surcharge,
@@ -264,6 +307,7 @@ class RoutePlanViewModel(
         val window: DepartureWindow,
         val originMode: OriginMode,
         val gps: GeoPoint?,
+        val locating: Boolean,
     )
 
     companion object {

@@ -257,8 +257,11 @@ private fun ComposerPreview() {
         onBack = {},
         onRetry = {},
         onSelectDestination = {},
-        onPickPhoto = {},
+        onAddMedia = {},
+        onRemoveMedia = {},
         onCaptionChange = {},
+        onSearchChange = {},
+        onSelectTrack = {},
         onPublish = {},
     )
 }

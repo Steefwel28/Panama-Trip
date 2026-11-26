@@ -1,6 +1,7 @@
 package com.panamatrip.app.features.trackrecorder.data
 
 import android.content.Context
+import com.panamatrip.app.domain.model.GeoPoint
 import com.panamatrip.app.features.trackrecorder.service.LocationTrackingService
 import com.panamatrip.app.features.trackrecorder.service.RecorderEvent
 import com.panamatrip.app.features.trackrecorder.service.RecorderSession
@@ -11,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 interface TrackRecorderController {
     val session: StateFlow<RecorderSession>
     val events: SharedFlow<RecorderEvent>
+    /** Ruta viva para el mapa; se actualiza solo al aceptar un punto. */
+    val path: StateFlow<List<GeoPoint>>
 
     fun start(destinationId: String?, destinationName: String?)
     fun pause()
@@ -25,6 +28,7 @@ class ServiceTrackRecorderController(context: Context) : TrackRecorderController
 
     override val session: StateFlow<RecorderSession> = LocationTrackingService.session
     override val events: SharedFlow<RecorderEvent> = LocationTrackingService.events
+    override val path: StateFlow<List<GeoPoint>> = LocationTrackingService.path
 
     override fun start(destinationId: String?, destinationName: String?) {
         LocationTrackingService.start(appContext, destinationId, destinationName)

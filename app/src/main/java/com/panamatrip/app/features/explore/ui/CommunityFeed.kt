@@ -5,10 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,8 +26,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,8 +43,8 @@ import com.panamatrip.app.core.designsystem.component.EmptyState
 import com.panamatrip.app.core.designsystem.component.MetricCapsule
 import com.panamatrip.app.core.designsystem.component.MetricItem
 import com.panamatrip.app.core.designsystem.component.OverlayTag
-import com.panamatrip.app.core.designsystem.component.PhotoHero
 import com.panamatrip.app.core.designsystem.component.SocialAction
+import com.panamatrip.app.core.designsystem.component.TonalImage
 import com.panamatrip.app.core.designsystem.haptic.rememberPanamaHaptics
 import com.panamatrip.app.core.designsystem.icons.PanamaIcons
 import com.panamatrip.app.core.designsystem.labels.commentsLabel
@@ -50,6 +58,7 @@ import com.panamatrip.app.core.designsystem.theme.Dimens
 import com.panamatrip.app.core.designsystem.theme.PanamaMotion
 import com.panamatrip.app.domain.model.CommunityPost
 import com.panamatrip.app.domain.model.Destination
+import com.panamatrip.app.domain.model.PostMediaType
 
 @Composable
 fun CommunityFeed(
@@ -108,15 +117,11 @@ private fun CommunityPostCard(
             .fillMaxWidth()
             .animateContentSize(animationSpec = PanamaMotion.spatial()),
     ) {
-        PhotoHero(
-            imageUrl = post.imageUrl,
+        PostMediaHero(
+            post = post,
             contentDescription = stringResource(R.string.photo_of, destination.name),
-            height = Dimens.feedHeroHeight,
-            seed = post.id,
-            modifier = Modifier.clickable(
-                onClickLabel = openDetailLabel,
-                onClick = { onOpenDestination(destination.id) },
-            ),
+            onClickLabel = openDetailLabel,
+            onOpenDetail = { onOpenDestination(destination.id) },
         ) {
             Row(
                 modifier = Modifier
@@ -238,6 +243,99 @@ private fun CommunityPostCard(
                 PlanRouteButton(onClick = { onPlanRoute(destination) })
             }
         }
+    }
+}
+
+/**
+ * Portada del post: foto en 1:1 o 3:4 según sus dimensiones reales; video en
+ * 3:4 con botón play que abre el visor a pantalla completa.
+ */
+@Composable
+private fun PostMediaHero(
+    post: CommunityPost,
+    contentDescription: String?,
+    onClickLabel: String,
+    onOpenDetail: () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    var videoUri by remember(post.id) { mutableStateOf<String?>(null) }
+    val cover = post.media.firstOrNull()
+    val isVideo = cover?.type == PostMediaType.VIDEO
+    val aspect = when {
+        isVideo -> 3f / 4f
+        cover == null || cover.width <= 0 || cover.height <= 0 -> 1f
+        cover.width >= cover.height -> 1f
+        else -> 3f / 4f
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(aspect)
+            .clip(RoundedCornerShape(0.dp))
+            .clickable(onClickLabel = onClickLabel) {
+                if (isVideo) videoUri = cover?.uri else onOpenDetail()
+            },
+    ) {
+        if (isVideo) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = PanamaIcons.Play,
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            TonalImage(
+                imageUrl = cover?.uri ?: post.imageUrl,
+                contentDescription = contentDescription,
+                seed = post.id,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0f to Color.Black.copy(alpha = 0.45f),
+                            0.45f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.88f),
+                        ),
+                    ),
+                ),
+        )
+
+        content()
+
+        if (isVideo) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(64.dp)
+                    .background(Color.Black.copy(alpha = 0.42f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = PanamaIcons.Play,
+                    contentDescription = stringResource(R.string.video_play),
+                    modifier = Modifier.size(32.dp),
+                    tint = Color.White,
+                )
+            }
+        }
+    }
+
+    videoUri?.let { uri ->
+        PostVideoViewer(uri = uri, onDismiss = { videoUri = null })
     }
 }
 

@@ -61,6 +61,8 @@ import com.panamatrip.app.core.intents.launchFirstAvailable
 import com.panamatrip.app.di.AppContainer
 import com.panamatrip.app.domain.model.Destination
 import com.panamatrip.app.domain.model.DestinationReview
+import com.panamatrip.app.domain.model.Carrier
+import com.panamatrip.app.domain.model.SignalLevel
 
 @Composable
 fun DestinationDetailRoute(
@@ -215,6 +217,7 @@ private fun DetailContent(
                         subtitle = stringResource(R.string.detail_semaphore_subtitle),
                     )
                     VehicleTrafficLightCard(summaries = destination.vehicleAccess)
+                    CarrierSignalCard(signal = destination.carrierSignal)
                 }
             }
             item(key = "coordinates") {
@@ -484,4 +487,61 @@ private fun ReviewCard(review: DestinationReview) {
             )
         }
     }
+}
+
+/** Cápsulas separadas por operadora: +Móvil y Tigo nunca se mezclan. */
+@Composable
+private fun CarrierSignalCard(signal: Map<Carrier, SignalLevel>) {
+    if (signal.isEmpty()) return
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(Dimens.cardCorner),
+        tonalElevation = Dimens.tonalElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.tightGap),
+        ) {
+            Text(
+                text = stringResource(R.string.carrier_signal_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.tightGap)) {
+                CarrierCapsule(
+                    label = stringResource(R.string.carrier_movil),
+                    level = signal[Carrier.MOVIL],
+                )
+                CarrierCapsule(
+                    label = stringResource(R.string.carrier_tigo),
+                    level = signal[Carrier.TIGO],
+                )
+            }
+            Text(
+                text = stringResource(R.string.carrier_signal_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CarrierCapsule(label: String, level: SignalLevel?) {
+    val resolved = level ?: SignalLevel.NONE
+    val textRes = when (resolved) {
+        SignalLevel.NONE -> R.string.signal_none
+        SignalLevel.LOW -> R.string.signal_low
+        SignalLevel.MEDIUM -> R.string.signal_medium
+        SignalLevel.HIGH -> R.string.signal_high
+    }
+    TonalTag(
+        text = "$label · ${stringResource(textRes)}",
+        tone = when (resolved) {
+            SignalLevel.NONE -> Tone.Neutral
+            SignalLevel.LOW -> Tone.Tertiary
+            SignalLevel.MEDIUM, SignalLevel.HIGH -> Tone.Primary
+        },
+    )
 }
